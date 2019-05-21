@@ -1,0 +1,15 @@
+{
+  "groups": ["un", "un", "deux", "un", "un", "deux", "un", "deux", "deux", "un", "deux", "deux", "un", "un", "deux", "un", "un", "deux", "un", "deux", "deux", "un", "deux", "deux"],
+  "conditions": ["dmso", "dmso", "dmso", "bif", "bif", "bif", "ecoli_bif", "ecoli_bif", "ecoli_bif", "ecoli_dmso", "ecoli_dmso", "ecoli_dmso", "pbs_bif", "pbs_bif", "pbs_bif", "pbs_dmso", "pbs_dmso", "pbs_dmso", "sce_bif", "sce_bif", "sce_bif", "sce_dmso", "sce_dmso", "sce_dmso"],
+  "contrast": {
+    "comparison_names": ["Effet_bif_injection", "Effet_bif_seul", "Effet_levure_seul", "Co-traitement_levureBif", "Effet_levure_dans_Co-traitement_levureBif", "effet_bif_dans_Co-traitement_levureBif", "Interaction_levureBif", "Co-traitement_ecoli_bif", "Effet_ecoli_dans_Co-traitement_ecolibif", "Effet_bif_dans_Co-traitement_ecolibif", "Interaction_Ecoli_bif", "Effet_ecoli_seul"],
+    "dmso": [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    "bif": [0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    "ecoli_bif": [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0],
+    "ecoli_dmso": [0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, 1],
+    "pbs_bif": [1, 0, 0, 0, -1, 0, -1, 0, -1, 0, -1, 0],
+    "pbs_dmso": [-1, 0, -1, -1, 0, 0, 1, -1, 0, 0, 1, -1],
+    "sce_bif": [0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0],
+    "sce_dmso": [0, 0, 1, 0, 0, -1, -1, 0, 0, 0, 0, 0]
+  }
+}
