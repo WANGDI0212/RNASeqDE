@@ -36,64 +36,29 @@ function(input, output, session) {
 
       # show the box
       showElement("box_DATASET")
-      showElement("box_FIELDS")
       showElement("box_PARAM")
+      showElement("but_DATASET")
+
+
 
       # show the content of the table
-      output$table_DATASET <- renderDataTable({
-        datatable(tmp,
-          rownames = F, extensions = c("FixedColumns", "Scroller"),
-          options = list(
-            scrollX = TRUE,
-            fixedColumns = list(leftColumns = 1),
-            deferRender = TRUE,
-            scrollY = 200,
-            scroller = TRUE,
-            searchHighlight = TRUE
-          )
-        )
+      output$table_DATASET <- renderRHandsontable({
+        rhandsontable(head(tmp, n = 100), stretchH = "all", height = 250, readOnly = T) %>% hot_cols(fixedColumnsLeft = 1)
       })
       output$txt_COLNAMES <- renderText(paste(colnames(tmp)[-1], collapse = ", "))
 
-      param$groups <- rep("un", ncol(tmp) - 1)
-      param$conditions <- rep(paste0("cond", 1:4), each = (ncol(tmp) - 1) / 4, length.out = ncol(tmp) - 1)
-
-
-      output$table_GRP <- renderDataTable({
-        DT <- matrix(param$groups, nrow = 1)
-
-        datatable(DT,
-          selection = "none", editable = "cell", rownames = F, colnames = names(inv())[-1], extensions = "AutoFill",
-          autoHideNavigation = T, options = list(
-            dom = "ft",
-            scrollX = TRUE,
-            searchHighlight = TRUE,
-            autoFill = TRUE
-          )
-        )
-      })
-
-      output$table_COND <- renderDataTable({
-        DT <- matrix(param$conditions, nrow = 1)
-
-        datatable(DT,
-          selection = "none", editable = "cell", extensions = "AutoFill", rownames = F, colnames = names(inv())[-1],
-          autoHideNavigation = T, options = list(
-            dom = "ft",
-            scrollX = TRUE,
-            searchHighlight = TRUE,
-            autoFill = TRUE
-          )
-        )
-      })
-
-
-
-
+      param$groups <- matrix(rep("un", ncol(tmp) - 1),
+        nrow = 1,
+        dimnames = list(NULL, names(tmp)[-1])
+      )
+      param$conditions <- matrix(rep(paste0("cond", 1:4), each = (ncol(tmp) - 1) / 4, length.out = ncol(tmp) - 1),
+        nrow = 1,
+        dimnames = list(NULL, names(tmp)[-1])
+      )
 
 
       # For the contrast table
-      condition <- unique(param$conditions)
+      condition <- unique(as.vector(param$conditions))
       DT <- diag(nrow = length(condition) - 1, ncol = length(condition))
       DT[row(DT) == col(DT) - 1] <- -1
 
@@ -104,31 +69,8 @@ function(input, output, session) {
       )
 
       param$contrast <- DT
-
-      contrast(param$contrast)
-
-      output$table_CONTRAST <- renderDataTable({
-        datatable(contrast(), editable = "cell", rownames = F, extensions = "Scroller", options = list(
-          dom = "ft",
-          scrollX = TRUE,
-          searchHighlight = TRUE,
-          deferRender = TRUE,
-          scrollY = 200,
-          scroller = TRUE
-        ))
-      })
     }
   })
-
-  proxy_GRP <- dataTableProxy("table_GRP")
-  proxy_COND <- dataTableProxy("table_COND")
-  proxy_CONT <- dataTableProxy("table_CONTRAST")
-
-  observe({
-    output$txt_GRP <- renderTable(table(param$groups))
-    output$txt_COND <- renderTable(table(param$conditions))
-  })
-
 
 
   # import the hypothetic parameters files
@@ -137,204 +79,71 @@ function(input, output, session) {
     # read the json parameters
     tmp <- read_parameter_file(input$file_PARAM$datapath)
 
-    sapply(names(tmp), function(x) {
-      param[[x]] <<- tmp[[x]]
-    })
+    param$groups <- matrix(tmp$groups, nrow = 1, dimnames = list(NULL, names(inv())[-1]))
+    param$conditions <- matrix(tmp$conditions, nrow = 1, dimnames = list(NULL, names(inv())[-1]))
 
-    replaceData(proxy_GRP, matrix(tmp$groups, nrow = 1, dimnames = list(NULL, names(inv())[-1])), resetPaging = F)
-    replaceData(proxy_COND, matrix(tmp$conditions, nrow = 1, dimnames = list(NULL, names(inv())[-1])), resetPaging = F)
-
-    contrast(param$contrast)
+    param$contrast <- tmp$contrast
   })
 
-  # If the user modify a cell in the group section
-  observeEvent(input$table_GRP_cell_edit, {
-    info <- input$table_GRP_cell_edit
-    param$groups[info$col + 1] <- as.character(info$value)
+
+  observe({
+    if (!is.null(input$table_GRP)) {
+      param$groups <- hot_to_r(input$table_GRP)
+    }
   })
 
-  # If the user modify a cell in the condition section
-  observeEvent(input$table_COND_cell_edit, {
-    info <- input$table_COND_cell_edit
+  observe({
+    if (!is.null(input$table_COND)) {
+      param$conditions <- hot_to_r(input$table_COND)
+    }
+  })
 
-    param$conditions[info$col + 1] <- as.character(info$value)
-    modifided = F
+  # TODO
+  observeEvent(param$conditions, {
+    tmp <- copy(param$contrast)
 
-    diff <- setdiff(param$conditions, names(param$contrast)[-1])
+    modified <- F
+    diff <- setdiff(as.vector(param$conditions)[-1], names(param$contrast))
     if (length(diff) != 0) {
-      modifided = T
-      set(param$contrast, NULL, diff, 0)
+      tmp[, (diff) := 0]
+      modified <- T
     }
 
-    diff <- setdiff(names(param$contrast)[-1], param$conditions)
+    diff <- setdiff(names(param$contrast)[-1], as.vector(param$conditions))
     if (length(diff) != 0) {
-      modifided = T
-      param$contrast[, (diff) := NULL]
+      tmp[, (diff) := NULL]
+      modified <- T
     }
 
-    setcolorder(param$contrast, c("comparison_names", unique(param$conditions)))
-
-    contrast(param$contrast)
-  })
-
-
-  # if the user modify a cell in the contrast sesction
-  observeEvent(input$table_CONTRAST_cell_edit, {
-    info <- input$table_CONTRAST_cell_edit
-    set(param$contrast, as.integer(info$row), as.integer(info$col + 1), as.integer(info$value))
-    contrast(param$contrast)
-  })
-
-  # the user want to add a row
-  observeEvent(input$but_ADD_ROW, {
-    row_to_add <- list(paste0("comparison_", nrow(param$contrast) + 1))
-    row_to_add <- c(row_to_add, lapply(2:ncol(param$contrast), function(x) 0))
-    names(row_to_add) <- names(param$contrast)
-    param$contrast <- rbind(param$contrast, row_to_add)
-
-    contrast(param$contrast)
-  }, ignoreInit = T)
-
-  # the user want to delete rows
-  observeEvent(input$but_DEL_ROW, {
-    if (!is.null(input$table_CONTRAST_rows_selected)) {
-      param$contrast <- param$contrast[-as.numeric(input$table_CONTRAST_rows_selected)]
+    if (modified) {
+      setcolorder(tmp, c("comparison_names", unique(as.vector(param$conditions))))
+      param$contrast <- tmp
     }
-    contrast(param$contrast)
+
   })
 
-  #
-  #   # show the table of parameters on the column names like the groups and the conditions
-  #   observeEvent({
-  #     param
-  #     input$txt_GRP
-  #     input$txt_COND
-  #   }, {
-  #     tmp <- param()
-  #
-  #     # update groups and conditions in the table if that change in the text input
-  #     tmp$groups <- unlist(strsplit(gsub(" ", "", input$txt_GRP), ","))
-  #     tmp$conditions <- unlist(strsplit(gsub(" ", "", input$txt_COND), ","))
-  #
-  #
-  #     # output$table_SUMMARY_column <- renderDataTable({
-  #     #   DT <- data.table(
-  #     #     column_names = names(inv())[-1],
-  #     #     groups = tmp$groups,
-  #     #     conditions = tmp$conditions
-  #     #     # modify = paste0('
-  #     #     #        <div class="btn-group" role="group" aria-label="Basic example">
-  #     #     #        <button type="button" class="btn btn-secondary modify"id=modify_', 1:length(tmp$conditions), ">Modify</button>
-  #     #     #        </div>
-  #     #     #        ")
-  #     #   )
-  #     #   datatable(DT) # escape = c(4))
-  #     # })
-  #
-  #     param(tmp)
-  #   })
-  #
-  #   observeEvent({
-  #     param
-  #     input$txt_COND
-  #     input$txtarea_CONTRAST
-  #   }, {
-  #     tmp <- param()
-  #
-  #     tmp$constrast <- if (is.null(input$txtarea_CONTRAST) || input$txtarea_CONTRAST == "") {
-  #       tmp$contrast
-  #     } else {
-  #       fread(text = input$txtarea_CONTRAST)
-  #     }
-  #
-  #     param(tmp)
-  #
-  #     output$table_SUMMARY_contrast <- renderDataTable(tmp$contrast)
-  #   })
-  #
-  #   observe({
-  #     toggleElement("but_DATASET", condition = (input$txt_GRP != "" && input$txt_COND != "" && input$txtarea_CONTRAST != ""))
-  #   })
+  observe({
+    if (!is.null(input$table_CONTRAST)) {
+      param$contrast <- hot_to_r(input$table_CONTRAST)
+    }
+  })
 
 
 
+  output$table_GRP <- renderRHandsontable({
+    rhandsontable(param$groups, stretchH = "all")
+  })
 
-  # modal_modify<-modalDialog(
-  #   fluidPage(
-  #     h3(strong("Row modification"),align="center"),
-  #     hr(),
-  #     dataTableOutput('row_modif'),
-  #     actionButton("save_changes","Save changes"),
-  #
-  #     tags$script(HTML("$(document).on('click', '#save_changes', function () {
-  #                        var list_value=[]
-  #                        for (i = 0; i < $( '.new_input' ).length; i++)
-  #                        {
-  #                        list_value.push($( '.new_input' )[i].value)
-  #                        }
-  #                        Shiny.onInputChange('newValue', list_value)
-  #                        });"))
-  #   ),
-  #   size="l"
-  # )
-  #
-  # observeEvent(input$lastClick, {
-  #                if (input$lastClickId%like%"modify") showModal(modal_modify)
-  #              }
-  # )
-  #
-  # output$row_modif<-renderDataTable({
-  #   selected_row=as.numeric(gsub("modify_","",input$lastClickId))
-  #
-  #   tmp <- param()
-  #
-  #   DT = data.table(column_names = names(inv())[-1],
-  #                   groups = tmp$groups,
-  #                   conditions = tmp$conditions)
-  #
-  #   old_row=DT[selected_row]
-  #   print(old_row)
-  #   row_change=list()
-  #
-  #   for (i in colnames(old_row))
-  #   {
-  #
-  #     if(i %like% "names"){
-  #       row_change[[i]] = as.character(old_row[, i, with = F])
-  #       next
-  #     }
-  #
-  #     row_change[[i]]<-paste0('<input class="new_input" type="text" id=new_',i ,', value = ', as.character(old_row[, i, with = F]),'><br>')
-  #   }
-  #   row_change=as.data.table(row_change)
-  #   setnames(row_change,colnames(old_row))
-  #   DT=rbind(old_row,row_change)
-  #   rownames(DT)<-c("Current values","New values")
-  #   DT
-  #
-  # },escape=F,options=list(dom='t',ordering=F),selection="none"
-  # )
+  output$table_COND <- renderRHandsontable({
+    rhandsontable(param$conditions, stretchH = "all")
+  })
 
+  output$table_CONTRAST <- renderRHandsontable({
+    rhandsontable(param$contrast, stretchH = "all")
+  })
 
-  # TODO Maybe
-  # observeEvent(input$num_NBGROUP, {
-  #   output$ui_GROUP <- renderUI({
-  #     code <- lapply(seq_len(input$num_NBGROUP), function(x) {
-  #       names <- paste0("_GRP_", x)
-  #       label <- paste("Group nb", x)
-  #
-  #       list(
-  #         p(label),
-  #         textInput(paste0("txt", names), NULL, value = input[[paste0("txt", names)]]),
-  #         selectInput(paste0("sel", names), NULL, choices = names(inv())[-1], multiple = T, selected = input[[paste0("sel", names)]])
-  #       )
-  #     })
-  #     return(code)
-  #   })
-  # })
-  #
-  # observe({
-  #
-  #
-  # })
+  observe({
+    output$txt_GRP <- renderTable(table(param$groups))
+    output$txt_COND <- renderTable(table(param$conditions))
+  })
 }
