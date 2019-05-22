@@ -41,7 +41,7 @@ dashboardPage(
           hidden(boxWithId(
             width = 8,
             id = "box_DATASET", title = "Extract of the dataset",
-            dataTableOutput("table_DATASET")
+            rHandsontableOutput("table_DATASET")
           )),
           hidden(boxWithId(
             width = 12,
@@ -50,19 +50,17 @@ dashboardPage(
             h3("Names columns"), textOutput("txt_COLNAMES"), hr(),
             # table Group
             h3("Groups"),
-            dataTableOutput("table_GRP"),
+            rHandsontableOutput("table_GRP"),
             tableOutput("txt_GRP"),
             hr(),
             # table condtitions
             h3("Conditions"),
-            dataTableOutput("table_COND"),
+            rHandsontableOutput("table_COND"),
             tableOutput("txt_COND"),
             hr(),
             # table contrast
             h3("contrast"),
-            actionButton("but_ADD_ROW", "Add row"),
-            actionButton("but_DEL_ROW", "Delete seleted row(s)"),
-            dataTableOutput("table_CONTRAST")
+            rHandsontableOutput("table_CONTRAST")
             #           tags$script("$(document).on('click', '#table_SUMMARY_column button', function () {
             #                 Shiny.onInputChange('lastClickId',this.id);
             #                 Shiny.onInputChange('lastClick', Math.random())

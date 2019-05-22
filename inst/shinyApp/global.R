@@ -1,12 +1,13 @@
 library(RNASeqDE)
 library(reactlog)
+library(rhandsontable)
 
 shinyOptions("shiny.launch.browser" = T)
 shinyOptions("shiny.trace" = T)
 shinyOptions("shiny.autoreload" = T)
 options(shiny.reactlog=TRUE)
 options(shiny.fullstacktrace = TRUE)
-options(shiny.error = browser)
+#options(shiny.error = browser)
 
 # set maximum input file size (here 30Mo)
 options(shiny.maxRequestSize = 30 * 1024^2)
