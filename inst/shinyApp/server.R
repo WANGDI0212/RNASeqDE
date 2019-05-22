@@ -85,23 +85,25 @@ function(input, output, session) {
     param$contrast <- tmp$contrast
   })
 
-
+  # take the input paramters in the group table
   observe({
     if (!is.null(input$table_GRP)) {
       param$groups <- hot_to_r(input$table_GRP)
     }
   })
 
+  # take the input paramters in the condition table
   observe({
     if (!is.null(input$table_COND)) {
       param$conditions <- hot_to_r(input$table_COND)
     }
   })
 
-  # TODO
+  # if there is a change in the conditions parameters take it to the contrast table
   observeEvent(param$conditions, {
-    tmp <- copy(param$contrast)
+    tmp <- copy(param$contrast) # the copy is important
 
+    # create new column if necessary
     modified <- F
     diff <- setdiff(as.vector(param$conditions)[-1], names(param$contrast))
     if (length(diff) != 0) {
@@ -109,12 +111,14 @@ function(input, output, session) {
       modified <- T
     }
 
+    # delete some column if nessary
     diff <- setdiff(names(param$contrast)[-1], as.vector(param$conditions))
     if (length(diff) != 0) {
       tmp[, (diff) := NULL]
       modified <- T
     }
 
+    # if the contrast table had been modified reorder the column and update the contrast table
     if (modified) {
       setcolorder(tmp, c("comparison_names", unique(as.vector(param$conditions))))
       param$contrast <- tmp
@@ -122,6 +126,7 @@ function(input, output, session) {
 
   })
 
+  #
   observe({
     if (!is.null(input$table_CONTRAST)) {
       param$contrast <- hot_to_r(input$table_CONTRAST)
@@ -129,7 +134,7 @@ function(input, output, session) {
   })
 
 
-
+  # the tables
   output$table_GRP <- renderRHandsontable({
     rhandsontable(param$groups, stretchH = "all")
   })
@@ -139,11 +144,14 @@ function(input, output, session) {
   })
 
   output$table_CONTRAST <- renderRHandsontable({
-    rhandsontable(param$contrast, stretchH = "all")
+    rhandsontable(param$contrast, stretchH = "all") %>%
+      hot_validate_numeric(cols = 2:ncol(param$contrast))
   })
 
+  # to the table functions
   observe({
     output$txt_GRP <- renderTable(table(param$groups))
     output$txt_COND <- renderTable(table(param$conditions))
   })
+
 }
