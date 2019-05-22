@@ -15,7 +15,7 @@ function(input, output, session) {
 
   inv <- reactiveVal()
   param <- reactiveValues()
-  contrast = reactiveVal()
+  contrast <- reactiveVal()
 
   # import the dataset we will use for the rest
   observeEvent(ignoreInit = T, {
@@ -38,7 +38,6 @@ function(input, output, session) {
       showElement("box_DATASET")
       showElement("box_FIELDS")
       showElement("box_PARAM")
-      showElement("box_CONTRAST")
 
       # show the content of the table
       output$table_DATASET <- renderDataTable({
@@ -104,9 +103,9 @@ function(input, output, session) {
         DT
       )
 
-      param$contrast = DT
+      param$contrast <- DT
 
-      contrast( DT )
+      contrast(param$contrast)
 
       output$table_CONTRAST <- renderDataTable({
         datatable(contrast(), editable = "cell", rownames = F, extensions = "Scroller", options = list(
@@ -123,6 +122,7 @@ function(input, output, session) {
 
   proxy_GRP <- dataTableProxy("table_GRP")
   proxy_COND <- dataTableProxy("table_COND")
+  proxy_CONT <- dataTableProxy("table_CONTRAST")
 
   observe({
     output$txt_GRP <- renderTable(table(param$groups))
@@ -150,51 +150,57 @@ function(input, output, session) {
   # If the user modify a cell in the group section
   observeEvent(input$table_GRP_cell_edit, {
     info <- input$table_GRP_cell_edit
-    param$groups[info$col] <- as.character(info$value)
+    param$groups[info$col + 1] <- as.character(info$value)
   })
 
   # If the user modify a cell in the condition section
-  # TODO modifier cette section pour que cela renvoi directement sur le tableau des contrasts
   observeEvent(input$table_COND_cell_edit, {
     info <- input$table_COND_cell_edit
-    param$conditions[info$col] <- as.character(info$value)
 
-    set(param$contrast, NULL, setdiff(param$conditions, names(param$contrast)), 0)
+    param$conditions[info$col + 1] <- as.character(info$value)
+    modifided = F
 
-    param$contrast[, setdiff(names(param$contrast), param$conditions) := NULL, with = F]
+    diff <- setdiff(param$conditions, names(param$contrast)[-1])
+    if (length(diff) != 0) {
+      modifided = T
+      set(param$contrast, NULL, diff, 0)
+    }
 
-    print(param$contrast)
+    diff <- setdiff(names(param$contrast)[-1], param$conditions)
+    if (length(diff) != 0) {
+      modifided = T
+      param$contrast[, (diff) := NULL]
+    }
 
+    setcolorder(param$contrast, c("comparison_names", unique(param$conditions)))
+
+    contrast(param$contrast)
   })
+
 
   # if the user modify a cell in the contrast sesction
   observeEvent(input$table_CONTRAST_cell_edit, {
-    info = input$table_CONTRAST_cell_edit
-    set(param$contrast, as.integer(info$row), as.integer(info$col), as.integer(info$value))
+    info <- input$table_CONTRAST_cell_edit
+    set(param$contrast, as.integer(info$row), as.integer(info$col + 1), as.integer(info$value))
     contrast(param$contrast)
-
   })
 
   # the user want to add a row
   observeEvent(input$but_ADD_ROW, {
-
-    row_to_add = list(paste0("comparison_", nrow(param$contrast) + 1))
-    row_to_add = c(row_to_add, lapply(2:ncol(param$contrast), function(x) 0))
-    names(row_to_add) = names(param$contrast)
-    param$contrast = rbind(param$contrast, row_to_add)
+    row_to_add <- list(paste0("comparison_", nrow(param$contrast) + 1))
+    row_to_add <- c(row_to_add, lapply(2:ncol(param$contrast), function(x) 0))
+    names(row_to_add) <- names(param$contrast)
+    param$contrast <- rbind(param$contrast, row_to_add)
 
     contrast(param$contrast)
-
   }, ignoreInit = T)
 
   # the user want to delete rows
   observeEvent(input$but_DEL_ROW, {
-
-    if (!is.null(input$table_CONTRAST_rows_selected)){
-      param$contrast = param$contrast[-as.numeric(input$table_CONTRAST_rows_selected)]
+    if (!is.null(input$table_CONTRAST_rows_selected)) {
+      param$contrast <- param$contrast[-as.numeric(input$table_CONTRAST_rows_selected)]
     }
     contrast(param$contrast)
-
   })
 
   #
