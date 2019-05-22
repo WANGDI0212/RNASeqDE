@@ -15,7 +15,6 @@ function(input, output, session) {
 
   inv <- reactiveVal()
   param <- reactiveValues()
-  contrast <- reactiveVal()
 
   # import the dataset we will use for the rest
   observeEvent(ignoreInit = T, {
@@ -153,5 +152,78 @@ function(input, output, session) {
     output$txt_GRP <- renderTable(table(param$groups))
     output$txt_COND <- renderTable(table(param$conditions))
   })
+
+
+
+
+
+  # Result ------------------------------------------------------------------
+
+  data_comp = 0
+  observeEvent(input$but_DATASET, {
+
+    count = copy(inv())
+    group = as.vector(param$groups)
+    conditions = as.vector(param$conditions)
+    contrast = param$contrast
+
+    plot_normalization = 0
+    plot_comp = 0
+
+    withProgress(message = "Calculation in Progress", {
+
+      incProgress(0, detail = "filter the data")
+
+      count = filter(count)
+
+      incProgress(1/4, detail = "normalize the data")
+
+      tmp = normalization(count, group)
+      y = tmp$normalized_dataset
+      plot_normalization <- tmp$plot
+
+      incProgress(1/4, detail = "Differential expression")
+      fit = DE(y, conditions)
+
+      incProgress(1/4, detail = "Do the comparison")
+      tmp = comparison(fit, contrast)
+      data_comp <<- tmp$data
+      plot_comp <- tmp$plot
+
+      setProgress(1, detail = "End of the calculation")
+
+    })
+
+
+    showMenuItem("tab_RES")
+    updateTabItems(session, "mnu_MENU", "tab_RES")
+
+
+    output$plot_NORM = renderPlot(plot_grid(plot_normalization$raw, plot_normalization$normalize, nrow = 1, align = "v"))
+
+    updateSelectInput(session, "sel_COMP", choices = data_comp[, unique(comp_name)], selected = data_comp[, unique(comp_name)][1])
+
+    output$tab_COMP = renderTable({
+      data_comp[pval_adj < 0.05, .( total = .N, up = sum(logFC > 0), down = sum(logFC < 0) ), by = comp_name ]
+    })
+
+  })
+
+  observeEvent(input$sel_COMP, {
+
+
+    gg_begin = ggplot(data_comp[comp_name == input$sel_COMP], aes(col = pval_adj < 0.05, shape = pval_adj < 0.05)) +
+      ggtitle(input$sel_COMP) +
+      scale_color_manual(name = "adj PValue < 0.05", values = c("blue", "red")) +
+      scale_shape_manual(name = "adj PValue < 0.05", values = c(16, 3))
+
+
+    output$plot_COMP = renderPlot({
+      a = gg_begin + geom_point(aes(x = AveLogCPM, y = logFC))
+      b = gg_begin + geom_point(aes(x = logFC, y = -log10(pval_adj))) + ylab("-log10(adj PValue)")
+
+      plot_grid(a, b, nrow = 1, align = "v")
+    })
+  }, ignoreInit = T)
 
 }

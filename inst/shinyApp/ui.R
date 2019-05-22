@@ -74,12 +74,23 @@ dashboardPage(
                        }")
           ))
         )
-      )
+      ),
 
-      # ### Result of the DE
-      # tabItem("tab_RES",
-      #         fluidRow()
-      #         )
+      ### Result of the DE
+      tabItem("tab_RES",
+              fluidRow(
+                box( width = 12, title = "Normalization",
+
+                     plotOutput("plot_NORM")
+
+                     ),
+                box(width = 12, title = "Comparison",
+                      selectInput("sel_COMP", "select the comparison you want", choices = NULL, width = "50%"),
+                      plotOutput("plot_COMP"),
+                      tableOutput("tab_COMP")
+                    )
+                )
+              )
     )
   )
 )

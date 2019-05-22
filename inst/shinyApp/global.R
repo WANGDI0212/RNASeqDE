@@ -1,6 +1,7 @@
 library(RNASeqDE)
 library(reactlog)
 library(rhandsontable)
+library(cowplot)
 
 shinyOptions("shiny.launch.browser" = T)
 shinyOptions("shiny.trace" = T)

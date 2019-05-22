@@ -103,10 +103,10 @@ DE <- function(y, conditions) {
 
   design <- model.matrix(~ 0 + conditions)
 
-  y <- estimateGLMCommonDisp(y, design) ## Common dispersion estimation: the same dispersion value is used to model the variance of a gene
-  y <- estimateGLMTrendedDisp(y, design) ## Trended dispersion estimation: esitmation with different dispersion values for each gene, to give an idea
-  y <- estimateGLMTagwiseDisp(y, design) ## Tagwise to take into account a specific dispersion for each gene
-  fit <- glmFit(y, design) ## Tagwise dispersion Glm
+  y_tmp <- estimateGLMCommonDisp(y, design) ## Common dispersion estimation: the same dispersion value is used to model the variance of a gene
+  y_tmp <- estimateGLMTrendedDisp(y_tmp, design) ## Trended dispersion estimation: esitmation with different dispersion values for each gene, to give an idea
+  y_tmp <- estimateGLMTagwiseDisp(y_tmp, design) ## Tagwise to take into account a specific dispersion for each gene
+  fit <- glmFit(y_tmp, design) ## Tagwise dispersion Glm
 
   return(fit)
 }
@@ -115,14 +115,14 @@ DE <- function(y, conditions) {
 
 # comparisons -------------------------------------------------------------
 #' Do the comparison
-#' 
+#'
 #' Make all the comparison that is inside the contrast arguments
 #'
 #' @param fit the glmfit form edgeR
 #' @param contrast the contrast data.table
 #'
 #' @return list with 3 elements:
-#'  - data, a data.table with: 
+#'  - data, a data.table with:
 #'     * rn: the name of the genes
 #'     * logFC: log fold change
 #'     * pval_adj: pvalue adjusted
@@ -135,44 +135,44 @@ DE <- function(y, conditions) {
 #' @importFrom data.table setDT := as.data.table rbindlist
 #' @importFrom edgeR glmLRT
 #' @importFrom ggplot2 ggplot scale_color_manual scale_shape_manual ggtitle geom_point
-#' 
+#'
 #' @examples
 comparison <- function(fit, contrast) {
 
   setDT(contrast)
-  
+
   plot = list()
   table = rbindlist(lapply( split(contrast, by = names(contrast)[1], keep.by = T), function(x){
-    
+
     comp_name <- as.character(x[, 1])
     comp <- glmLRT(fit, contrast = unlist(x[, 2:ncol(x)]))
-    
+
     table = as.data.table(comp$table, keep.rownames = T)
-    
+
     table[, ':='(pval_adj = p.adjust(PValue, "BH"), AveLogCPM = comp$AveLogCPM)]
-    
-    # calculate the value 
+
+    # calculate the value
     table[, pval := pval_adj < .05]
-    
-    # begin the graph with values
-    gg_begin = ggplot(table, aes(col = pval, shape = pval)) + ggtitle(comp_name) +
-      scale_color_manual(name = "PValue < 0.05", values = c("blue", "red")) +
-      scale_shape_manual(name = "PValue < 0.05", values = c(16, 3))
-    
-    # mean-difference plot
-    plot[[comp_name]]$plot_Smear <<- gg_begin + geom_point(aes(x = AveLogCPM, y = logFC))
-    
-    # volcano plot
-    plot[[comp_name]]$plot_volcano <<- gg_begin +
-      geom_point(aes(x = logFC, y = -log10(PValue)))
-    
-    return(table[, .(rn, logFC, pval_adj, comp_name)])
-    
+
+    # # begin the graph with values
+    # gg_begin = ggplot(table, aes(col = pval, shape = pval)) + ggtitle(comp_name) +
+    #   scale_color_manual(name = "PValue < 0.05", values = c("blue", "red")) +
+    #   scale_shape_manual(name = "PValue < 0.05", values = c(16, 3))
+    #
+    # # mean-difference plot
+    # plot[[paste(comp_name, "plot_Smear", sep = "_")]] <<- gg_begin + geom_point(aes(x = AveLogCPM, y = logFC))
+    #
+    # # volcano plot
+    # plot[[paste(comp_name, "plot_volcano", sep = "_")]] <<- gg_begin +
+    #   geom_point(aes(x = logFC, y = -log10(PValue)))
+
+    return(table[, .(rn, logFC, pval_adj, AveLogCPM, comp_name)])
+
   }))
-  
+
   # dcast(table[pval_adj <= 0.05], rn ~ comp_name, value.var = "logFC", fill = 0)
-  
+
   # heatmap = pheatmap(t(dcast(table[pval_adj <= 0.05], rn ~ comp_name, value.var = "logFC", fill = 0)), scale = "column", silent = T)
 
-  return(data = table, plot = plot)
+  return(list(data = table))
 }
