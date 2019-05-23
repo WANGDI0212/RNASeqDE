@@ -162,6 +162,7 @@ function(input, output, session) {
   data_comp = 0
   observeEvent(input$but_DATASET, {
 
+    # Before the calculation
     count = copy(inv())
     group = as.vector(param$groups)
     conditions = as.vector(param$conditions)
@@ -173,11 +174,9 @@ function(input, output, session) {
     withProgress(message = "Calculation in Progress", {
 
       incProgress(0, detail = "filter the data")
-
       count = filter(count)
 
       incProgress(1/4, detail = "normalize the data")
-
       tmp = normalization(count, group)
       y = tmp$normalized_dataset
       plot_normalization <- tmp$plot
@@ -198,24 +197,51 @@ function(input, output, session) {
     showMenuItem("tab_RES")
     updateTabItems(session, "mnu_MENU", "tab_RES")
 
-
+    # The plot on the normalisation
     output$plot_NORM = renderPlot(plot_grid(plot_normalization$raw, plot_normalization$normalize, nrow = 1, align = "v"))
 
+    # update the input from the data we have
     updateSelectInput(session, "sel_COMP", choices = data_comp[, unique(comp_name)], selected = data_comp[, unique(comp_name)][1])
-
-    output$tab_COMP = renderTable({
-      data_comp[pval_adj < 0.05, .( total = .N, up = sum(logFC > 0), down = sum(logFC < 0) ), by = comp_name ]
-    })
+    updateSliderInput(session, "num_Pvalue", value = 0.05, min = 0, max = round(data_comp[, max(pval_adj)]), step = 0.001)
 
   })
 
-  observeEvent(input$sel_COMP, {
+
+  observeEvent(input$num_Pvalue, {
+    # update the table with the Pvalue you want
+    output$tab_COMP = renderTable({
+      data_comp[pval_adj < input$num_Pvalue, .( total = .N, up = sum(logFC > 0), down = sum(logFC < 0) ), by = comp_name ]
+    })
+
+    # update the heatmap
+    # keep the rows that have at least one
+    keep.row = dcast(data_comp, rn ~ comp_name, value.var = c("pval_adj"))[, rowSums(.SD <= input$num_Pvalue) >= 1, .SDcols = -1]
+
+    if (sum(keep.row) >= 1){
+      output$plot_HEATMAP_NON_CONTRAST = renderPlot( pheatmap(
+      t( as.matrix(dcast(data_comp, rn ~ comp_name, value.var = c("logFC"))[keep.row], rownames = "rn") ),
+      scale="row", main = "heatmap non contrasted", show_colnames = F
+      ))
+
+      output$plot_HEATMAP_CONTRAST = renderPlot( pheatmap(
+        t( as.matrix(dcast(data_comp[pval_adj <= input$num_Pvalue], rn ~ comp_name, value.var = c("logFC"), fill = 0), rownames = "rn") ),
+        scale="row", main = "heatmap contrasted", show_colnames = F
+      ))
+    }
 
 
-    gg_begin = ggplot(data_comp[comp_name == input$sel_COMP], aes(col = pval_adj < 0.05, shape = pval_adj < 0.05)) +
+
+  }, ignoreInit = T)
+
+  # update the graph
+  observeEvent({
+    input$sel_COMP
+    input$num_Pvalue
+    }, {
+    gg_begin = ggplot(data_comp[comp_name == input$sel_COMP], aes(col = pval_adj < input$num_Pvalue, shape = pval_adj < input$num_Pvalue)) +
       ggtitle(input$sel_COMP) +
-      scale_color_manual(name = "adj PValue < 0.05", values = c("blue", "red")) +
-      scale_shape_manual(name = "adj PValue < 0.05", values = c(16, 3))
+      scale_color_manual(name = paste("adj PValue <",  input$num_Pvalue), values = c("blue", "red")) +
+      scale_shape_manual(name = paste("adj PValue <",  input$num_Pvalue), values = c(16, 3))
 
 
     output$plot_COMP = renderPlot({
@@ -225,5 +251,7 @@ function(input, output, session) {
       plot_grid(a, b, nrow = 1, align = "v")
     })
   }, ignoreInit = T)
+
+
 
 }

@@ -85,9 +85,15 @@ dashboardPage(
 
                      ),
                 box(width = 12, title = "Comparison",
-                      selectInput("sel_COMP", "select the comparison you want", choices = NULL, width = "50%"),
-                      plotOutput("plot_COMP"),
-                      tableOutput("tab_COMP")
+                      column(6, selectInput("sel_COMP", "select the comparison you want", choices = NULL)),
+                      column(6, numericInput("num_Pvalue", "Pvalue adjusted", min = 0, max = 1, value = 1)),
+                      column(12, plotOutput("plot_COMP")),
+                      column(12, tableOutput("tab_COMP"))
+                    # TODO an cursor with pvalue to choose the pvalue we want
+                    ),
+                box(title = "heatmap", width = 12,
+                    column(6, plotOutput("plot_HEATMAP_NON_CONTRAST")),
+                    column(6, plotOutput("plot_HEATMAP_CONTRAST"))
                     )
                 )
               )
