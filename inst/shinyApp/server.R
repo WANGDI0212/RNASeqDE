@@ -8,6 +8,7 @@ function(input, output, session) {
   observe({
     # hide few menu at the begining
     hideMenuItem("tab_RES")
+    hideMenuItem("tab_ANA")
   })
 
 
@@ -122,7 +123,6 @@ function(input, output, session) {
       setcolorder(tmp, c("comparison_names", unique(as.vector(param$conditions))))
       param$contrast <- tmp
     }
-
   })
 
   #
@@ -144,7 +144,8 @@ function(input, output, session) {
 
   output$table_CONTRAST <- renderRHandsontable({
     rhandsontable(param$contrast, stretchH = "all") %>%
-      hot_validate_numeric(cols = 2:ncol(param$contrast))
+      hot_validate_numeric(cols = 2:ncol(param$contrast)) %>%
+      hot_heatmap(cols = 2:ncol(param$contrast))
   })
 
   # to the table functions
@@ -159,38 +160,34 @@ function(input, output, session) {
 
   # Result ------------------------------------------------------------------
 
-  data_comp = 0
+  data_comp <- 0
   observeEvent(input$but_DATASET, {
 
     # Before the calculation
-    count = copy(inv())
-    group = as.vector(param$groups)
-    conditions = as.vector(param$conditions)
-    contrast = param$contrast
+    count <- copy(inv())
+    group <- as.vector(param$groups)
+    conditions <- as.vector(param$conditions)
+    contrast <- param$contrast
 
-    plot_normalization = 0
-    plot_comp = 0
+    plot_normalization <- 0
+    plot_comp <- 0
 
     withProgress(message = "Calculation in Progress", {
-
       incProgress(0, detail = "filter the data")
-      count = filter(count)
+      count <- filter(count)
 
-      incProgress(1/4, detail = "normalize the data")
-      tmp = normalization(count, group)
-      y = tmp$normalized_dataset
+      incProgress(1 / 4, detail = "normalize the data")
+      tmp <- normalization(count, group)
+      y <- tmp$normalized_dataset
       plot_normalization <- tmp$plot
 
-      incProgress(1/4, detail = "Differential expression")
-      fit = DE(y, conditions)
+      incProgress(1 / 4, detail = "Differential expression")
+      fit <- DE(y, conditions)
 
-      incProgress(1/4, detail = "Do the comparison")
-      tmp = comparison(fit, contrast)
-      data_comp <<- tmp$data
-      plot_comp <- tmp$plot
+      incProgress(1 / 4, detail = "Do the comparison")
+      data_comp <<- comparison(fit, contrast)
 
       setProgress(1, detail = "End of the calculation")
-
     })
 
 
@@ -198,60 +195,71 @@ function(input, output, session) {
     updateTabItems(session, "mnu_MENU", "tab_RES")
 
     # The plot on the normalisation
-    output$plot_NORM = renderPlot(plot_grid(plot_normalization$raw, plot_normalization$normalize, nrow = 1, align = "v"))
+    output$plot_NORM <- renderPlot(plot_grid(plot_normalization$raw, plot_normalization$normalize, nrow = 1, align = "v"))
 
     # update the input from the data we have
     updateSelectInput(session, "sel_COMP", choices = data_comp[, unique(comp_name)], selected = data_comp[, unique(comp_name)][1])
     updateSliderInput(session, "num_Pvalue", value = 0.05, min = 0, max = round(data_comp[, max(pval_adj)]), step = 0.001)
-
   })
 
 
   observeEvent(input$num_Pvalue, {
     # update the table with the Pvalue you want
-    output$tab_COMP = renderTable({
-      data_comp[pval_adj < input$num_Pvalue, .( total = .N, up = sum(logFC > 0), down = sum(logFC < 0) ), by = comp_name ]
+    output$tab_COMP <- renderTable({
+      data_comp[pval_adj < input$num_Pvalue, .(total = .N, up = sum(logFC > 0), down = sum(logFC < 0)), by = comp_name ]
     })
 
     # update the heatmap
-    # keep the rows that have at least one
-    keep.row = dcast(data_comp, rn ~ comp_name, value.var = c("pval_adj"))[, rowSums(.SD <= input$num_Pvalue) >= 1, .SDcols = -1]
+    # keep the rows that have at least one of the Pvalue is down to the Pvalue they want
+    keep.row <- dcast(data_comp, rn ~ comp_name, value.var = c("pval_adj"))[, rowSums(.SD <= input$num_Pvalue) >= 1, .SDcols = -1]
 
-    if (sum(keep.row) >= 1){
-      output$plot_HEATMAP_NON_CONTRAST = renderPlot( pheatmap(
-      t( as.matrix(dcast(data_comp, rn ~ comp_name, value.var = c("logFC"))[keep.row], rownames = "rn") ),
-      scale="row", main = "heatmap non contrasted", show_colnames = F
+    if (sum(keep.row) >= 1) {
+      output$plot_HEATMAP_NON_CONTRAST <- renderPlot(pheatmap(
+        t(as.matrix(dcast(data_comp, rn ~ comp_name, value.var = c("logFC"))[keep.row], rownames = "rn")),
+        scale = "row", main = "heatmap non contrasted", show_colnames = F
       ))
 
-      output$plot_HEATMAP_CONTRAST = renderPlot( pheatmap(
-        t( as.matrix(dcast(data_comp[pval_adj <= input$num_Pvalue], rn ~ comp_name, value.var = c("logFC"), fill = 0), rownames = "rn") ),
-        scale="row", main = "heatmap contrasted", show_colnames = F
+      output$plot_HEATMAP_CONTRAST <- renderPlot(pheatmap(
+        t(as.matrix(dcast(data_comp[pval_adj <= input$num_Pvalue], rn ~ comp_name, value.var = c("logFC"), fill = 0), rownames = "rn")),
+        scale = "row", main = "heatmap contrasted", show_colnames = F
       ))
     }
-
-
-
   }, ignoreInit = T)
 
   # update the graph
   observeEvent({
     input$sel_COMP
     input$num_Pvalue
-    }, {
-    gg_begin = ggplot(data_comp[comp_name == input$sel_COMP], aes(col = pval_adj < input$num_Pvalue, shape = pval_adj < input$num_Pvalue)) +
+  }, {
+    gg_begin <- ggplot(data_comp[comp_name == input$sel_COMP], aes(col = pval_adj < input$num_Pvalue, shape = pval_adj < input$num_Pvalue)) +
       ggtitle(input$sel_COMP) +
-      scale_color_manual(name = paste("adj PValue <",  input$num_Pvalue), values = c("blue", "red")) +
-      scale_shape_manual(name = paste("adj PValue <",  input$num_Pvalue), values = c(16, 3))
+      scale_color_manual(name = paste("adj PValue <", input$num_Pvalue), values = c("blue", "red")) +
+      scale_shape_manual(name = paste("adj PValue <", input$num_Pvalue), values = c(16, 3))
 
 
-    output$plot_COMP = renderPlot({
-      a = gg_begin + geom_point(aes(x = AveLogCPM, y = logFC))
-      b = gg_begin + geom_point(aes(x = logFC, y = -log10(pval_adj))) + ylab("-log10(adj PValue)")
+    output$plot_COMP <- renderPlot({
+      a <- gg_begin + geom_point(aes(x = AveLogCPM, y = logFC))
+      b <- gg_begin + geom_point(aes(x = logFC, y = -log10(pval_adj))) + ylab("-log10(adj PValue)")
 
       plot_grid(a, b, nrow = 1, align = "v")
     })
   }, ignoreInit = T)
 
 
+  mat_res <- reactiveVal()
+  observeEvent({
+    input$but_RES
+    if (input$but_RES >= 1) {
+      input$num_Pvalue
+    }
+  }, {
+    showMenuItem("tab_ANA")
 
+    mat_res(dcast(data_comp[pval_adj <= input$num_Pvalue], rn ~ comp_name, value.var = "logFC", fill = 0))
+
+    updateTabItems(session, "mnu_MENU", "tab_ANA")
+  }, ignoreInit = T)
+
+
+  updatebox = c("PCA" = F, "tSNE" = F, "som" = F, "DBSCAN" = F, "ABOD" = F, "isofor" = F)
 }

@@ -4,7 +4,8 @@ dashboardPage(
     sidebarMenu(
       id = "mnu_MENU",
       menuItem("Load dataset and parameters", tabName = "tab_LOAD"),
-      menuItem("Result", tabName = "tab_RES")
+      menuItem("Result", tabName = "tab_RES"),
+      menuItem("Analysis", tabName = "tab_ANA")
     )
   ),
   dashboardBody(
@@ -76,27 +77,53 @@ dashboardPage(
         )
       ),
 
-      ### Result of the DE
-      tabItem("tab_RES",
-              fluidRow(
-                box( width = 12, title = "Normalization",
+      # Result of the DE --------------------------------------------------------
+      tabItem(
+        "tab_RES",
+        fluidRow(
+          box(
+            width = 12, title = "Normalization",
+            plotOutput("plot_NORM")
+          ),
+          box(
+            width = 12, title = "Comparison",
+            column(6, selectInput("sel_COMP", "select the comparison you want", choices = NULL)),
+            column(6, numericInput("num_Pvalue", "Pvalue adjusted", min = 0, max = 1, value = 1)),
+            column(12, plotOutput("plot_COMP")),
+            column(12, tableOutput("tab_COMP"))
+            # TODO an cursor with pvalue to choose the pvalue we want
+          ),
+          box(
+            title = "heatmap", width = 12,
+            column(6, plotOutput("plot_HEATMAP_NON_CONTRAST")),
+            column(6, plotOutput("plot_HEATMAP_CONTRAST"))
+          ),
+          column(1,
+            offset = 11,
+            actionButton("but_RES", "Continue"),
+            tags$style("#but_RES {
+                          background-color: #0080ff;
+                          color: white;
+                       }")
+          )
+        )
+      ),
 
-                     plotOutput("plot_NORM")
 
-                     ),
-                box(width = 12, title = "Comparison",
-                      column(6, selectInput("sel_COMP", "select the comparison you want", choices = NULL)),
-                      column(6, numericInput("num_Pvalue", "Pvalue adjusted", min = 0, max = 1, value = 1)),
-                      column(12, plotOutput("plot_COMP")),
-                      column(12, tableOutput("tab_COMP"))
-                    # TODO an cursor with pvalue to choose the pvalue we want
-                    ),
-                box(title = "heatmap", width = 12,
-                    column(6, plotOutput("plot_HEATMAP_NON_CONTRAST")),
-                    column(6, plotOutput("plot_HEATMAP_CONTRAST"))
-                    )
-                )
-              )
+      # Analysis of the result --------------------------------------------------
+
+      tabItem(
+        "tab_ANA",
+        fluidRow(
+          box(
+            width = 12, title = "Tools for analysis",
+            checkboxGroupInput("chkgrp_TOOLS", "Choose the tools",
+              inline = T,
+              choices = c("PCA", "tSNE", "self organizing map" = "som", "DBSCAN", "ABOD", "isolation forest" = "isofor")
+            )
+          )
+        )
+      )
     )
   )
 )

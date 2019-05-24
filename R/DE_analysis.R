@@ -44,7 +44,7 @@ filter <- function(counts) {
 #'
 #' @importFrom edgeR DGEList calcNormFactors
 #' @importFrom limma plotMDS
-#' @importFrom ggplot2 ggplot ggtitle geom_point geom_text xlab ylab scale_color_discrete
+#' @importFrom ggplot2 ggplot ggtitle geom_point geom_text xlab ylab scale_color_discrete aes
 #'
 #' @examples
 normalization <- function(counts, groups) {
@@ -134,7 +134,6 @@ DE <- function(y, conditions) {
 #'
 #' @importFrom data.table setDT := as.data.table rbindlist
 #' @importFrom edgeR glmLRT
-#' @importFrom ggplot2 ggplot scale_color_manual scale_shape_manual ggtitle geom_point
 #'
 #' @examples
 comparison <- function(fit, contrast) {
@@ -149,24 +148,9 @@ comparison <- function(fit, contrast) {
 
     table = as.data.table(comp$table, keep.rownames = T)
 
-    table[, ':='(pval_adj = p.adjust(PValue, "BH"), AveLogCPM = comp$AveLogCPM)]
+    table[, ":="(pval_adj = p.adjust(PValue, "BH") )]
 
-    # calculate the value
-    table[, pval := pval_adj < .05]
-
-    # # begin the graph with values
-    # gg_begin = ggplot(table, aes(col = pval, shape = pval)) + ggtitle(comp_name) +
-    #   scale_color_manual(name = "PValue < 0.05", values = c("blue", "red")) +
-    #   scale_shape_manual(name = "PValue < 0.05", values = c(16, 3))
-    #
-    # # mean-difference plot
-    # plot[[paste(comp_name, "plot_Smear", sep = "_")]] <<- gg_begin + geom_point(aes(x = AveLogCPM, y = logFC))
-    #
-    # # volcano plot
-    # plot[[paste(comp_name, "plot_volcano", sep = "_")]] <<- gg_begin +
-    #   geom_point(aes(x = logFC, y = -log10(PValue)))
-
-    return(table[, .(rn, logFC, pval_adj, AveLogCPM, comp_name)])
+    return(table[, .(rn, logFC, pval_adj, logCPM, comp_name)])
 
   }))
 
@@ -174,5 +158,5 @@ comparison <- function(fit, contrast) {
 
   # heatmap = pheatmap(t(dcast(table[pval_adj <= 0.05], rn ~ comp_name, value.var = "logFC", fill = 0)), scale = "column", silent = T)
 
-  return(list(data = table))
+  return(table[, .(rn, logFC, pval_adj, AveLogCPM = logCPM, comp_name)])
 }

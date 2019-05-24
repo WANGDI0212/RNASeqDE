@@ -20,27 +20,3 @@ read_parameter_file <- function(name_file) {
 
   return(data_parameters)
 }
-
-
-
-#' Convert a data.table in text
-#'
-#' @param data the data.table
-#'
-#' @return
-#' @export
-#'
-#' @examples
-tableToText = function(data){
-
-  out = sapply(1:nrow(data), function(x){
-
-    paste(as.character(data[x]), collapse = ", ")
-
-  })
-
-  out = c(paste(names(data), collapse = ", "), out)
-
-  out = paste(out, collapse = "\n")
-
-}

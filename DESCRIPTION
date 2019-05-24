@@ -15,7 +15,13 @@ Imports:
 	knitr,
 	jsonlite,
 	stringr,
-	rhandsontable
+	rhandsontable,
+	ade4,
+	kohonen,
+	dbscan,
+	Rtsne,
+	isofor,
+	abodOutlier
 Depends: 
 	R(>= 3.0),
 	edgeR,
