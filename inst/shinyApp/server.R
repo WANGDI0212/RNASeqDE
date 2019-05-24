@@ -29,7 +29,9 @@ function(input, output, session) {
         file = input$file_DATASET$datapath,
         skip = ifelse(is.na(input$num_skip_line) || input$num_skip_line == 0, "__auto__", input$num_skip_line),
         data.table = T,
-        dec = input$rad_decimal
+        dec = input$rad_decimal,
+        fill = T,
+        blank.lines.skip = T
       ))
 
       inv(tmp)
@@ -43,7 +45,7 @@ function(input, output, session) {
 
       # show the content of the table
       output$table_DATASET <- renderRHandsontable({
-        rhandsontable(head(tmp, n = 100), stretchH = "all", height = 250, readOnly = T) %>% hot_cols(fixedColumnsLeft = 1)
+        rhandsontable(head(tmp, n = 50), stretchH = "all", height = 250, readOnly = T) %>% hot_cols(fixedColumnsLeft = 1)
       })
       output$txt_COLNAMES <- renderText(paste(colnames(tmp)[-1], collapse = ", "))
 
@@ -125,27 +127,36 @@ function(input, output, session) {
     }
   })
 
-  #
+  # take the
   observe({
     if (!is.null(input$table_CONTRAST)) {
-      param$contrast <- hot_to_r(input$table_CONTRAST)
+      tmp <- hot_to_r(input$table_CONTRAST)
+
+      added_row = unique( which(is.na( tmp ), arr.ind = T)[, "row"] )
+      if (length(added_row) != 0 ){
+        set(tmp, added_row, 2:ncol(tmp), 0)
+        set( tmp, added_row, 1L, basename(tempfile("comp_")))
+      }
+      print(tmp)
+      param$contrast = tmp
     }
   })
 
 
   # the tables
   output$table_GRP <- renderRHandsontable({
-    rhandsontable(param$groups, stretchH = "all")
+    rhandsontable(param$groups, stretchH = "all") %>%
+      hot_context_menu(allowRowEdit = F, allowColEdit = F)
   })
 
   output$table_COND <- renderRHandsontable({
-    rhandsontable(param$conditions, stretchH = "all")
+    rhandsontable(param$conditions, stretchH = "all") %>%
+      hot_context_menu(allowRowEdit = F, allowColEdit = F)
   })
 
   output$table_CONTRAST <- renderRHandsontable({
     rhandsontable(param$contrast, stretchH = "all") %>%
-      hot_validate_numeric(cols = 2:ncol(param$contrast)) %>%
-      hot_heatmap(cols = 2:ncol(param$contrast))
+      hot_validate_numeric(cols = 2:ncol(param$contrast))
   })
 
   # to the table functions

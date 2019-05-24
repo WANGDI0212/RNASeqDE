@@ -164,14 +164,9 @@ plot(wss, type = "l")
 
 
 # the model
-y = seq(2000, 100000, by = 1000)
-z = sapply(y, function(x) {
-  set.seed(5)
-  som_grid <- somgrid(xdim = 10, ydim = 10, topo = "hexagonal", toroidal = F, neighbourhood.fct = "gaussian")
-  som_model <- som(matrix, grid = som_grid, rlen = x)
-  print( 100 * which(x == y) / length(y))
-  som_model$changes[nrow(som_model$changes)]
-})
+set.seed(5)
+som_grid <- somgrid(xdim = 10, ydim = 10, topo = "hexagonal", toroidal = F, neighbourhood.fct = "gaussian")
+som_model <- som(matrix, grid = som_grid, rlen = 1000)
 
 
 
@@ -325,10 +320,6 @@ ggplot(NULL, aes(x = tsne$Y[,1], y = tsne$Y[,2])) +
   geom_point(aes(col = data_method[, as.character(rowSums(.SD)),
                                    .SDcols = patterns("[A-Z]{2,}")])) +
   scale_color_discrete(name = "methods")
-
-
-
-
 
 
 

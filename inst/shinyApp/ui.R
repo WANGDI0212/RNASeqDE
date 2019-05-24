@@ -91,7 +91,6 @@ dashboardPage(
             column(6, numericInput("num_Pvalue", "Pvalue adjusted", min = 0, max = 1, value = 1)),
             column(12, plotOutput("plot_COMP")),
             column(12, tableOutput("tab_COMP"))
-            # TODO an cursor with pvalue to choose the pvalue we want
           ),
           box(
             title = "heatmap", width = 12,
