@@ -127,18 +127,17 @@ function(input, output, session) {
     }
   })
 
-  # take the
+  # Take the contrast and if there is one suppelementary line take it and replace it by another line filled by 0 and with a random name
   observe({
     if (!is.null(input$table_CONTRAST)) {
       tmp <- hot_to_r(input$table_CONTRAST)
 
-      added_row = unique( which(is.na( tmp ), arr.ind = T)[, "row"] )
-      if (length(added_row) != 0 ){
+      added_row <- unique(which(is.na(tmp), arr.ind = T)[, "row"])
+      if (length(added_row) != 0) {
         set(tmp, added_row, 2:ncol(tmp), 0)
-        set( tmp, added_row, 1L, basename(tempfile("comp_")))
+        set(tmp, added_row, 1L, basename(tempfile("comp_")))
       }
-      print(tmp)
-      param$contrast = tmp
+      param$contrast <- tmp
     }
   })
 
@@ -156,7 +155,16 @@ function(input, output, session) {
 
   output$table_CONTRAST <- renderRHandsontable({
     rhandsontable(param$contrast, stretchH = "all") %>%
-      hot_validate_numeric(cols = 2:ncol(param$contrast))
+      hot_validate_numeric(cols = 2:ncol(param$contrast)) %>%
+      hot_cols(col = 2:ncol(param$contrast), renderer = "
+           function (instance, td, row, col, prop, value, cellProperties) {
+             Handsontable.renderers.NumericRenderer.apply(this, arguments);
+              if (value < 0) {
+              td.style.background = 'lightblue';
+             } else if (value > 0) {
+              td.style.background = 'Salmon';
+             }
+           }")
   })
 
   # to the table functions
@@ -237,11 +245,13 @@ function(input, output, session) {
     }
   }, ignoreInit = T)
 
-  # update the graph
+  # update the graph of the comparison
   observeEvent({
     input$sel_COMP
     input$num_Pvalue
   }, {
+
+    # to avoid rewrite the same lines over and over
     gg_begin <- ggplot(data_comp[comp_name == input$sel_COMP], aes(col = pval_adj < input$num_Pvalue, shape = pval_adj < input$num_Pvalue)) +
       ggtitle(input$sel_COMP) +
       scale_color_manual(name = paste("adj PValue <", input$num_Pvalue), values = c("blue", "red")) +
@@ -257,6 +267,14 @@ function(input, output, session) {
   }, ignoreInit = T)
 
 
+
+
+
+
+# Analysis ----------------------------------------------------------------
+
+
+  #the matrix of the result
   mat_res <- reactiveVal()
   observeEvent({
     input$but_RES
@@ -266,11 +284,13 @@ function(input, output, session) {
   }, {
     showMenuItem("tab_ANA")
 
-    mat_res(dcast(data_comp[pval_adj <= input$num_Pvalue], rn ~ comp_name, value.var = "logFC", fill = 0))
+    mat_res(as.matrix(dcast(data_comp[pval_adj <= input$num_Pvalue], rn ~ comp_name, value.var = "logFC", fill = 0), rownames = "rn"))
 
     updateTabItems(session, "mnu_MENU", "tab_ANA")
   }, ignoreInit = T)
 
+  # use this vector to say this calculation is already done don't redo it again
+  updatebox <- c("PCA" = F, "tSNE" = F, "som" = F, "DBSCAN" = F, "ABOD" = F, "isofor" = F)
 
-  updatebox = c("PCA" = F, "tSNE" = F, "som" = F, "DBSCAN" = F, "ABOD" = F, "isofor" = F)
+
 }

@@ -120,6 +120,11 @@ dashboardPage(
               inline = T,
               choices = c("PCA", "tSNE", "self organizing map" = "som", "DBSCAN", "ABOD", "isolation forest" = "isofor")
             )
+          ),
+
+          boxWithId(
+            id = "box_PCA", title = "PCA", width = 6,
+            plotOutput("plot_PCA")
           )
         )
       )
