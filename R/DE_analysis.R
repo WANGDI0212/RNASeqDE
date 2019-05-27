@@ -137,21 +137,18 @@ DE <- function(y, conditions) {
 #'
 #' @examples
 comparison <- function(fit, contrast) {
-
   setDT(contrast)
 
-  plot = list()
-  table = rbindlist(lapply( split(contrast, by = names(contrast)[1], keep.by = T), function(x){
-
+  plot <- list()
+  table <- rbindlist(lapply(split(contrast, by = names(contrast)[1], keep.by = T), function(x) {
     comp_name <- as.character(x[, 1])
     comp <- glmLRT(fit, contrast = unlist(x[, 2:ncol(x)]))
 
-    table = as.data.table(comp$table, keep.rownames = T)
+    table <- as.data.table(comp$table, keep.rownames = T)
 
-    table[, ":="(pval_adj = p.adjust(PValue, "BH") )]
+    table[, ":="(pval_adj = p.adjust(PValue, "BH"))]
 
     return(table[, .(rn, logFC, pval_adj, logCPM, comp_name)])
-
   }))
 
   # dcast(table[pval_adj <= 0.05], rn ~ comp_name, value.var = "logFC", fill = 0)

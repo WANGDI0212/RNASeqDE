@@ -13,10 +13,9 @@
 #'
 #' @examples
 read_parameter_file <- function(name_file) {
+  data_parameters <- read_json(name_file, simplifyVector = T)
 
-  data_parameters = read_json(name_file, simplifyVector = T)
-
-  data_parameters$contrast = as.data.table(data_parameters$contrast)
+  data_parameters$contrast <- as.data.table(data_parameters$contrast)
 
   return(data_parameters)
 }
