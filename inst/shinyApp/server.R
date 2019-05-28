@@ -156,7 +156,7 @@ function(input, output, session) {
   output$table_CONTRAST <- renderRHandsontable({
     rhandsontable(param$contrast, stretchH = "all") %>%
       hot_validate_numeric(cols = 2:ncol(param$contrast)) %>%
-      hot_cols(col = 2:ncol(param$contrast), renderer = "
+      hot_cols(renderer = "
            function (instance, td, row, col, prop, value, cellProperties) {
              Handsontable.renderers.NumericRenderer.apply(this, arguments);
               if (value < 0) {
@@ -225,23 +225,26 @@ function(input, output, session) {
   observeEvent(input$num_Pvalue, {
     # update the table with the Pvalue you want
     output$tab_COMP <- renderTable({
-      data_comp[pval_adj < input$num_Pvalue, .(total = .N, up = sum(logFC > 0), down = sum(logFC < 0)), by = comp_name ]
+      data_comp[pval_adj <= input$num_Pvalue, .(total = .N, up = sum(logFC > 0), down = sum(logFC < 0)), by = comp_name ]
     })
 
     # update the heatmap
     # keep the rows that have at least one of the Pvalue is down to the Pvalue they want
-    keep.row <- dcast(data_comp, rn ~ comp_name, value.var = c("pval_adj"))[, rowSums(.SD <= input$num_Pvalue) >= 1, .SDcols = -1]
-
+    keep.row <- data_comp[, sum(pval_adj <= input$num_Pvalue) >= 1, by = rn][, V1]
     if (sum(keep.row) >= 1) {
-      output$plot_HEATMAP_NON_CONTRAST <- renderPlot(pheatmap(
-        t(as.matrix(dcast(data_comp, rn ~ comp_name, value.var = c("logFC"))[keep.row], rownames = "rn")),
-        scale = "row", main = "heatmap non contrasted", show_colnames = F
-      ))
+      output$plot_HEATMAP_NON_CONTRAST <- renderPlot({
+        pheatmap(
+          t(as.matrix(dcast(data_comp, rn ~ comp_name, value.var = "logFC")[keep.row], rownames = "rn")),
+          scale = "row", main = "heatmap non contrasted", show_colnames = F
+        )
+      })
 
-      output$plot_HEATMAP_CONTRAST <- renderPlot(pheatmap(
-        t(as.matrix(dcast(data_comp[pval_adj <= input$num_Pvalue], rn ~ comp_name, value.var = c("logFC"), fill = 0), rownames = "rn")),
-        scale = "row", main = "heatmap contrasted", show_colnames = F
-      ))
+      output$plot_HEATMAP_CONTRAST <- renderPlot({
+        pheatmap(
+          t(as.matrix(dcast(data_comp[pval_adj <= input$num_Pvalue], rn ~ comp_name, value.var = "logFC", fill = 0), rownames = "rn")),
+          scale = "row", main = "heatmap contrasted", show_colnames = F
+        )
+      })
     }
   }, ignoreInit = T)
 
@@ -271,10 +274,10 @@ function(input, output, session) {
 
 
 
-# Analysis ----------------------------------------------------------------
+  # Analysis ----------------------------------------------------------------
 
 
-  #the matrix of the result
+  # the matrix of the result
   mat_res <- reactiveVal()
   observeEvent({
     input$but_RES
@@ -289,8 +292,32 @@ function(input, output, session) {
     updateTabItems(session, "mnu_MENU", "tab_ANA")
   }, ignoreInit = T)
 
+
+
+
+
   # use this vector to say this calculation is already done don't redo it again
-  updatebox <- c("PCA" = F, "tSNE" = F, "som" = F, "DBSCAN" = F, "ABOD" = F, "isofor" = F)
+  # When the value is true the update had to been done
+  updatebox <- c("PCA" = T, "tSNE" = T, "som" = T, "DBSCAN" = T, "ABOD" = T, "isofor" = T)
 
+  # PCA box
+  observeEvent(input$chkgrp_TOOLS, {
+    toggleElement("box_PCA", condition = "PCA" %in% input$chkgrp_TOOLS)
 
+    if ("PCA" %in% input$chkgrp_TOOLS && updatebox["PCA"]) {
+      pca <- ade4::dudi.pca(mat_res(), center = F, scale = F, scannf = F, nf = 5)
+
+      output$txt_PCA <- renderText(sprintf("Their is %s of the explained variance", scales::percent(cumsum(pca$eig) / sum(pca$eig))[5]))
+      output$plot_PCA <- renderPlot({
+        dev.control("enable")
+        ade4::s.corcircle(pca$c1)
+        corcircle <- recordPlot()
+
+        axis <- qplot(data = pca$l1, x = RS1, y = RS2, main = "The first two axis")
+        plot_grid(corcircle, axis, align = "v", nrow = 1)
+      })
+    }
+
+    updatebox["PCA"] <- "PCA" %in% input$chkgrp_TOOLS
+  }, ignoreNULL = F, ignoreInit = T)
 }

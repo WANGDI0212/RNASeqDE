@@ -82,18 +82,18 @@ dashboardPage(
         "tab_RES",
         fluidRow(
           box(
-            width = 12, title = "Normalization",
+            width = 12, title = "Normalizations",
             plotOutput("plot_NORM")
           ),
           box(
-            width = 12, title = "Comparison",
+            width = 12, title = "Comparisons",
             column(6, selectInput("sel_COMP", "select the comparison you want", choices = NULL)),
             column(6, numericInput("num_Pvalue", "Pvalue adjusted", min = 0, max = 1, value = 1)),
             column(12, plotOutput("plot_COMP")),
             column(12, tableOutput("tab_COMP"))
           ),
           box(
-            title = "heatmap", width = 12,
+            title = "heatmaps", width = 12,
             column(6, plotOutput("plot_HEATMAP_NON_CONTRAST")),
             column(6, plotOutput("plot_HEATMAP_CONTRAST"))
           ),
@@ -122,10 +122,11 @@ dashboardPage(
             )
           ),
 
-          boxWithId(
+          hidden(boxWithId(
             id = "box_PCA", title = "PCA", width = 6,
+            textOutput("txt_PCA"),
             plotOutput("plot_PCA")
-          )
+          ))
         )
       )
     )

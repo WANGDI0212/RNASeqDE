@@ -21,7 +21,8 @@ Imports:
 	dbscan,
 	Rtsne,
 	isofor,
-	abodOutlier
+	abodOutlier,
+	gridGraphics
 Depends: 
 	R(>= 3.0),
 	edgeR,
