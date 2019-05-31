@@ -329,8 +329,12 @@ function(input, output, session) {
   ana_object <- reactiveValues()
 
 
+
   # PCA box
-  observeEvent(input$chkgrp_TOOLS, {
+  observeEvent({
+    input$chkgrp_TOOLS
+    input$num_PCA
+    }, {
     toggleElement("box_PCA", condition = "PCA" %in% input$chkgrp_TOOLS)
 
     if (is.null(ana_object$pca) && "PCA" %in% input$chkgrp_TOOLS) {
@@ -344,18 +348,25 @@ function(input, output, session) {
       ))
     }
 
+    # the plot
     output$plot_PCA <- renderPlot({
-      # For the corcircle
       corcircle <- ggplot(data = ana_object$pca$c1, aes(x = CS1, y = CS2, label = rownames(ana_object$pca$c1))) +
         geom_segment(aes(xend = 0, yend = 0), arrow = arrow(ends = "first", length = unit(0.25, "cm"))) +
         ggforce::geom_circle(aes(x0 = 0, y0 = 0, r = 1), inherit.aes = F) +
         geom_label(aes(vjust = ifelse(CS2 < 0, "top", "bottom"))) +
-        coord_fixed() + xlab(NULL) + ylab(NULL) + ggtitle("corcircle")
+        coord_fixed() + xlab(NULL) + ylab(NULL) + ggtitle("corcircle") + theme_gray()
 
-      axis <- qplot(data = ana_object$pca$l1, x = RS1, y = RS2, main = "The first two axis")
-      plot_grid(corcircle, axis, nrow = 1, align = "v")
+      axis <- qplot(data = ana_object$pca$l1, x = RS1, y = RS2,
+                    main = "The first two axis",
+                    color = as.character(sphere(ana_object$pca$l1, input$num_PCA)),
+                    shape = as.character(sphere(ana_object$pca$l1, input$num_PCA))) +
+        scale_color_manual(name = "Outliers", values = color_true_false) +
+        scale_shape_manual(name = "Outliers", values = shape_true_false) +
+        theme_gray()
+      plot_grid(corcircle, axis, nrow = 1)
     })
 
+    # the
     output$txt_PCA_out <- renderText(outliers_number(length(sphere(ana_object$pca$l1, input$num_PCA))))
 
     if (!"PCA" %in% input$chkgrp_TOOLS) ana_object$pca <- NULL
@@ -381,12 +392,47 @@ function(input, output, session) {
         x = ana_object$tSNE$Y[, 1], y = ana_object$tSNE$Y[, 2], main = "tSNE", xlab = "axis 1", ylab = "axis 2",
         color = as.character(scan$cluster == 0), shape = as.character(scan$cluster == 0)
       ) + scale_color_manual(name = "Outliers", values = color_true_false) +
-        scale_shape_manual(name = "Outliers", values = shape_true_false)
+        scale_shape_manual(name = "Outliers", values = shape_true_false) + theme_gray()
     })
 
-    output$txt_tSNE <- renderText(sprintf(
-      "Their is %d outliers", sum(scan$cluster == 0)
-    ))
+    output$txt_tSNE <- renderText(outliers_number(sum(scan$cluster == 0)))
     if (!"tSNE" %in% input$chkgrp_TOOLS) ana_object$tSNE <- NULL
+  }, ignoreNULL = F, ignoreInit = T)
+
+
+
+  # DBSCAN box
+  observeEvent({
+    input$chkgrp_TOOLS
+    input$num_DBSCAN_EPSILON
+    input$num_DBSCAN_MIN
+  }, {
+    toggleElement("box_DBSCAN", condition = "DBSCAN" %in% input$chkgrp_TOOLS)
+
+    if (is.null(ana_object$dbscan) || ana_object$dbscan$eps != input$num_DBSCAN_EPSILON || ana_object$dbscan$minPts != input$num_DBSCAN_MIN ){
+      ana_object$dbscan <- dbscan::dbscan(ana_object$tSNE$Y, eps = input$num_DBSCAN_EPSILON, minPts = input$num_DBSCAN_MIN)
+
+
+    output$txt_DBSCAN = renderText({
+      paste0(outliers_number(sum(ana_object$dbscan$cluster == 0)), "\n", ana_object$dbscan)
+    })
+    }
+
+    if(!"DBSCAN" %in% input$chkgrp_TOOLS) ana_object$dbscan = NULL
+  }, ignoreNULL = F, ignoreInit = T)
+
+
+  # ABOD box
+  observeEvent({
+    input$chkgrp_TOOLS
+    input$num_ABOD_KNN
+    input$num_ABOD_QUANTILE
+  },{
+    toggleElement("box_ABOD", condition = "ABOD" %in% input$chkgrp_TOOLS)
+
+    if (is.null(ana_object$abod))
+      ana_object$abod = abodOutlier::abod(matrix, method = "knn", k = input$num_ABOD_KNN)
+
+
   }, ignoreNULL = F, ignoreInit = T)
 }

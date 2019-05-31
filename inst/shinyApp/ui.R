@@ -126,17 +126,37 @@ dashboardPage(
             id = "box_PCA", title = "PCA", width = 6,
             textOutput("txt_PCA"),
             plotOutput("plot_PCA"),
-            column(6, numericInput("num_PCA", "sphere radius", value = 2, min = 0, step = 0.1)),
-            column(6, textOutput("txt_PCA_out"))
+            column(12, align="left", style = "display: flex;flex-direction: row;align-items: center;",
+              div(style="width: 50%", numericInput("num_PCA", "sphere radius", value = 2, min = 0, step = 0.1)),
+              div(style = "width: 49%; text-align: center", textOutput("txt_PCA_out"))
+            )
           )),
 
           # tSNE
           hidden(boxWithId(
             id = "box_tSNE", title = "tSNE", width = 6,
+            h4("DBSCAN"),
             column(3, numericInput("num_SNE_EPSILON", "Epsillon", 0.5, min = 0, step = 0.5)),
             column(9, sliderInput("num_SNE_MIN", "MinPts", min = 1, max = 20, step = 1, value = 5)),
+            br(),
             column(12, plotOutput("plot_tSNE")),
             textOutput("txt_tSNE")
+          )),
+
+          # DBSCAN
+          hidden(boxWithId(
+            id = "box_DBSCAN", title = "DBSCAN", width = 6,
+            column(3, numericInput("num_DBSCAN_EPSILON", "Epsillon", 0.5, min = 0, step = 0.5)),
+            column(9, sliderInput("num_DBSCAN_MIN", "MinPts", min = 1, max = 20, step = 1, value = 5)),
+            textOutput("txt_DBSCAN")
+          )),
+
+          # ABOD
+          hidden(boxWithId(
+            id = "box_ABOD", title = "ABOD", width = 6,
+            column(3, sliderInput("num_ABOD_KNN", "Number of nearest neighbours", 20, min = 0, max = 40, step = 1)),
+            column(3, sliderInput("num_ABOD_QUANTILE", "quantile", 0.05, min = 0, max = 1, step = 0.01)),
+            textOutput('txt_ABOD')
           ))
         )
       )

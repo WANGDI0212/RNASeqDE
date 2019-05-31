@@ -3,6 +3,8 @@ library(reactlog)
 library(rhandsontable)
 library(cowplot)
 
+theme_set(theme_gray())
+
 shinyOptions("shiny.launch.browser" = T)
 shinyOptions("shiny.trace" = T)
 shinyOptions("shiny.autoreload" = T)
@@ -66,7 +68,7 @@ sphere <- function(x, radius) {
 
   vec_dist <- rowSums(sweep(x, 2, center, "-")^2) >= radius^2
 
-  return(names(which(vec_dist)))
+  return(vec_dist)
 }
 
 outliers_number = function(nb){
