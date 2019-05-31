@@ -157,14 +157,14 @@ function(input, output, session) {
     rhandsontable(param$contrast, stretchH = "all") %>%
       hot_validate_numeric(cols = 2:ncol(param$contrast)) %>%
       hot_cols(renderer = "
-           function (instance, td, row, col, prop, value, cellProperties) {
-             Handsontable.renderers.NumericRenderer.apply(this, arguments);
-              if (value < 0) {
-              td.style.background = 'lightblue';
-             } else if (value > 0) {
-              td.style.background = 'Salmon';
-             }
-           }")
+               function (instance, td, row, col, prop, value, cellProperties) {
+               Handsontable.renderers.NumericRenderer.apply(this, arguments);
+               if (value < 0) {
+               td.style.background = 'lightblue';
+               } else if (value > 0) {
+               td.style.background = 'Salmon';
+               }
+               }")
   })
 
   # to the table functions
@@ -178,6 +178,8 @@ function(input, output, session) {
 
 
   # Result ------------------------------------------------------------------
+
+  plot_list <- reactiveValues()
 
   data_comp <- 0
   observeEvent(input$but_DATASET, {
@@ -213,13 +215,17 @@ function(input, output, session) {
     showMenuItem("tab_RES")
     updateTabItems(session, "mnu_MENU", "tab_RES")
 
+    plot_list$normalization_raw <- plot_normalization$raw
+    plot_list$normalization <- plot_normalization$normalize
+
     # The plot on the normalisation
-    output$plot_NORM <- renderPlot(plot_grid(plot_normalization$raw, plot_normalization$normalize, nrow = 1, align = "v"))
+    output$plot_NORM <- renderPlot(plot_grid(plot_list$normalization_raw, plot_list$normalization, nrow = 1, align = "v"))
 
     # update the input from the data we have
     updateSelectInput(session, "sel_COMP", choices = data_comp[, unique(comp_name)], selected = data_comp[, unique(comp_name)][1])
     updateSliderInput(session, "num_Pvalue", value = 0.05, min = 0, max = round(data_comp[, max(pval_adj)]), step = 0.001)
   })
+
 
 
   observeEvent(input$num_Pvalue, {
@@ -228,25 +234,41 @@ function(input, output, session) {
       data_comp[pval_adj <= input$num_Pvalue, .(total = .N, up = sum(logFC > 0), down = sum(logFC < 0)), by = comp_name ]
     })
 
+
     # update the heatmap
     # keep the rows that have at least one of the Pvalue is down to the Pvalue they want
-    keep.row <- data_comp[, sum(pval_adj <= input$num_Pvalue) >= 1, by = rn][, V1]
-    if (sum(keep.row) >= 1) {
-      output$plot_HEATMAP_NON_CONTRAST <- renderPlot({
-        pheatmap(
-          t(as.matrix(dcast(data_comp, rn ~ comp_name, value.var = "logFC")[keep.row], rownames = "rn")),
-          scale = "row", main = "heatmap non contrasted", show_colnames = F
-        )
-      })
+    keep.row <- data_comp[, sum(pval_adj <= input$num_Pvalue) >= 1, by = rn][(V1)]
+    if (nrow(keep.row) >= 1) {
+      plot_list$heatmap_non_contrast <- heatmap_ggplot(data_comp[
+        keep.row,
+        on = "rn"
+      ], "heatmap non contrasted")
+      #   pheatmap(
+      #   t(as.matrix(dcast(data_comp, rn ~ comp_name, value.var = "logFC")[keep.row], rownames = "rn")),
+      #   scale = "row", main = "heatmap non contrasted", show_colnames = F, silent = T
+      # )
 
-      output$plot_HEATMAP_CONTRAST <- renderPlot({
-        pheatmap(
-          t(as.matrix(dcast(data_comp[pval_adj <= input$num_Pvalue], rn ~ comp_name, value.var = "logFC", fill = 0), rownames = "rn")),
-          scale = "row", main = "heatmap contrasted", show_colnames = F
-        )
-      })
+      plot_list$heatmap_contrast <- heatmap_ggplot(
+        data_comp[pval_adj <= input$num_Pvalue],
+        "heatmap contrasted"
+      )
     }
+    output$plot_HEATMAP <- renderPlot(plot_grid(plot_list$heatmap_non_contrast, plot_list$heatmap_contrast, nrow = 1, align = "v"))
+
+    # sapply( split(table, by = "comp_name"), function(subdata){
+    #   gg_begin <- ggplot(subdata, aes(col = pval_adj < input$num_Pvalue, shape = pval_adj < input$num_Pvalue)) +
+    #     ggtitle(subdata[, unique(comp_name)]) +
+    #     scale_color_manual(name = paste("adj PValue <", input$num_Pvalue), values = c("blue", "red")) +
+    #     scale_shape_manual(name = paste("adj PValue <", input$num_Pvalue), values = c(16, 3))
+    #
+    #   plot_grid(gg_begin + geom_point(aes(x = AveLogCPM, y = logFC)),
+    #             gg_begin + geom_point(aes(x = logFC, y = -log10(pval_adj))) + ylab("-log10(adj PValue)"),
+    #             nrow = 1, align = "v")
+    # }, simplify = F)
   }, ignoreInit = T)
+
+
+
 
   # update the graph of the comparison
   observeEvent({
@@ -255,10 +277,14 @@ function(input, output, session) {
   }, {
 
     # to avoid rewrite the same lines over and over
-    gg_begin <- ggplot(data_comp[comp_name == input$sel_COMP], aes(col = pval_adj < input$num_Pvalue, shape = pval_adj < input$num_Pvalue)) +
+    name_legend <- paste("adj PValue <=", input$num_Pvalue)
+    gg_begin <- ggplot(data_comp[comp_name == input$sel_COMP], aes(
+      col = as.character(pval_adj < input$num_Pvalue),
+      shape = as.character(pval_adj < input$num_Pvalue)
+    )) +
       ggtitle(input$sel_COMP) +
-      scale_color_manual(name = paste("adj PValue <", input$num_Pvalue), values = c("blue", "red")) +
-      scale_shape_manual(name = paste("adj PValue <", input$num_Pvalue), values = c(16, 3))
+      scale_color_manual(name = "Outliers", values = color_true_false) +
+      scale_shape_manual(name = "Outliers", values = shape_true_false) + theme_gray()
 
 
     output$plot_COMP <- renderPlot({
@@ -296,28 +322,71 @@ function(input, output, session) {
 
 
 
-  # use this vector to say this calculation is already done don't redo it again
-  # When the value is true the update had to been done
-  updatebox <- c("PCA" = T, "tSNE" = T, "som" = T, "DBSCAN" = T, "ABOD" = T, "isofor" = T)
+
+
+
+  # the object of the analysis
+  ana_object <- reactiveValues()
+
 
   # PCA box
   observeEvent(input$chkgrp_TOOLS, {
     toggleElement("box_PCA", condition = "PCA" %in% input$chkgrp_TOOLS)
 
-    if ("PCA" %in% input$chkgrp_TOOLS && updatebox["PCA"]) {
-      pca <- ade4::dudi.pca(mat_res(), center = F, scale = F, scannf = F, nf = 5)
+    if (is.null(ana_object$pca) && "PCA" %in% input$chkgrp_TOOLS) {
 
-      output$txt_PCA <- renderText(sprintf("Their is %s of the explained variance", scales::percent(cumsum(pca$eig) / sum(pca$eig))[5]))
-      output$plot_PCA <- renderPlot({
-        dev.control("enable")
-        ade4::s.corcircle(pca$c1)
-        corcircle <- recordPlot()
+      # calcul the pca
+      ana_object$pca <- ade4::dudi.pca(mat_res(), center = F, scale = F, scannf = F, nf = 5)
 
-        axis <- qplot(data = pca$l1, x = RS1, y = RS2, main = "The first two axis")
-        plot_grid(corcircle, axis, align = "v", nrow = 1)
-      })
+      output$txt_PCA <- renderText(sprintf(
+        "Their is %s of the explained variance for the %dnd axis.",
+        scales::percent(cumsum(ana_object$pca$eig) / sum(ana_object$pca$eig))[5], 5
+      ))
     }
 
-    updatebox["PCA"] <- "PCA" %in% input$chkgrp_TOOLS
+    output$plot_PCA <- renderPlot({
+      # For the corcircle
+      corcircle <- ggplot(data = ana_object$pca$c1, aes(x = CS1, y = CS2, label = rownames(ana_object$pca$c1))) +
+        geom_segment(aes(xend = 0, yend = 0), arrow = arrow(ends = "first", length = unit(0.25, "cm"))) +
+        ggforce::geom_circle(aes(x0 = 0, y0 = 0, r = 1), inherit.aes = F) +
+        geom_label(aes(vjust = ifelse(CS2 < 0, "top", "bottom"))) +
+        coord_fixed() + xlab(NULL) + ylab(NULL) + ggtitle("corcircle")
+
+      axis <- qplot(data = ana_object$pca$l1, x = RS1, y = RS2, main = "The first two axis")
+      plot_grid(corcircle, axis, nrow = 1, align = "v")
+    })
+
+    output$txt_PCA_out <- renderText(outliers_number(length(sphere(ana_object$pca$l1, input$num_PCA))))
+
+    if (!"PCA" %in% input$chkgrp_TOOLS) ana_object$pca <- NULL
+  }, ignoreNULL = F, ignoreInit = T)
+
+
+
+  # tSNE box
+  observeEvent({
+    input$chkgrp_TOOLS
+    input$num_SNE_EPSILON
+    input$num_SNE_MIN
+  }, {
+    toggleElement("box_tSNE", condition = "tSNE" %in% input$chkgrp_TOOLS)
+
+    if (is.null(ana_object$tSNE)) {
+      ana_object$tSNE <- tSNE_func(mat_res(), pca = T, normalize = F, pca_center = F, max_iter = 1000)
+    }
+    scan <- dbscan::dbscan(ana_object$tSNE$Y, eps = input$num_SNE_EPSILON, minPts = input$num_SNE_MIN)
+
+    output$plot_tSNE <- renderPlot({
+      qplot(
+        x = ana_object$tSNE$Y[, 1], y = ana_object$tSNE$Y[, 2], main = "tSNE", xlab = "axis 1", ylab = "axis 2",
+        color = as.character(scan$cluster == 0), shape = as.character(scan$cluster == 0)
+      ) + scale_color_manual(name = "Outliers", values = color_true_false) +
+        scale_shape_manual(name = "Outliers", values = shape_true_false)
+    })
+
+    output$txt_tSNE <- renderText(sprintf(
+      "Their is %d outliers", sum(scan$cluster == 0)
+    ))
+    if (!"tSNE" %in% input$chkgrp_TOOLS) ana_object$tSNE <- NULL
   }, ignoreNULL = F, ignoreInit = T)
 }

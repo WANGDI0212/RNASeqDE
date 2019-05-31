@@ -70,15 +70,16 @@ normalization <- function(counts, groups) {
       ggtitle("MDSplot on the normalized dataset")
   })
 
-
   gg_list <- lapply(gg_list, function(x) {
     x +
       geom_point() +
-      geom_text(vjust = 0, nudge_y = 0.05, show.legend = F, hjust = 0.5) +
+      geom_text(aes(vjust = "top"), show.legend = F, inherit.aes = T) +
       xlab("Leading logFC dimension 1") +
       ylab("Leading logFC dimension 2") +
-      scale_color_discrete(name = "groups")
+      scale_color_discrete(name = "groups") + theme_gray()
   })
+
+
 
   return(list(normalized_dataset = y, plot = gg_list))
 }

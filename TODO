@@ -2,8 +2,8 @@
 Todo:
   ☐ add a dowload button to the end of the result page
   box:
-    ☐ pca
-    ☐ tsne
+    ✔ pca @done(19-05-31 11:41)
+    ✔ tsne @done(19-05-31 11:41)
     ☐ som
     ☐ DBSCAN
     ☐ ABOD

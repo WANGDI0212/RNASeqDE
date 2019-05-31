@@ -94,8 +94,7 @@ dashboardPage(
           ),
           box(
             title = "heatmaps", width = 12,
-            column(6, plotOutput("plot_HEATMAP_NON_CONTRAST")),
-            column(6, plotOutput("plot_HEATMAP_CONTRAST"))
+            plotOutput("plot_HEATMAP")
           ),
           column(1,
             offset = 11,
@@ -118,14 +117,26 @@ dashboardPage(
             width = 12, title = "Tools for analysis",
             checkboxGroupInput("chkgrp_TOOLS", "Choose the tools",
               inline = T,
-              choices = c("PCA", "tSNE", "self organizing map" = "som", "DBSCAN", "ABOD", "isolation forest" = "isofor")
+              choices = c("PCA", "tSNE", "self organizing map" = "SOM", "DBSCAN", "ABOD", "isolation forest" = "ISOFOR")
             )
           ),
 
+          # PCA
           hidden(boxWithId(
             id = "box_PCA", title = "PCA", width = 6,
             textOutput("txt_PCA"),
-            plotOutput("plot_PCA")
+            plotOutput("plot_PCA"),
+            column(6, numericInput("num_PCA", "sphere radius", value = 2, min = 0, step = 0.1)),
+            column(6, textOutput("txt_PCA_out"))
+          )),
+
+          # tSNE
+          hidden(boxWithId(
+            id = "box_tSNE", title = "tSNE", width = 6,
+            column(3, numericInput("num_SNE_EPSILON", "Epsillon", 0.5, min = 0, step = 0.5)),
+            column(9, sliderInput("num_SNE_MIN", "MinPts", min = 1, max = 20, step = 1, value = 5)),
+            column(12, plotOutput("plot_tSNE")),
+            textOutput("txt_tSNE")
           ))
         )
       )
