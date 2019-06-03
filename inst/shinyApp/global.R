@@ -43,6 +43,10 @@ color_true_false = c("TRUE" = "blue", "FALSE" = "red")
 shape_true_false = c("TRUE" = 19, "FALSE" = 3)
 
 
+coolBlueHotRed <- function(n, alpha = 1) {
+  rainbow(n, end = 4 / 6, alpha = alpha)[n:1]
+}
+
 # to do a heatmap with ggplot
 heatmap_ggplot <- function(x, title = NULL) {
   mat = dcast(x, rn ~ comp_name, fill = 0, value.var = "logFC")

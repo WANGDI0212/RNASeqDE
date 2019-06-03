@@ -366,7 +366,6 @@ function(input, output, session) {
       plot_grid(corcircle, axis, nrow = 1)
     })
 
-    # the
     output$txt_PCA_out <- renderText(outliers_number(length(sphere(ana_object$pca$l1, input$num_PCA))))
 
     if (!"PCA" %in% input$chkgrp_TOOLS) ana_object$pca <- NULL
@@ -409,8 +408,8 @@ function(input, output, session) {
   }, {
     toggleElement("box_DBSCAN", condition = "DBSCAN" %in% input$chkgrp_TOOLS)
 
-    if (is.null(ana_object$dbscan) || ana_object$dbscan$eps != input$num_DBSCAN_EPSILON || ana_object$dbscan$minPts != input$num_DBSCAN_MIN ){
-      ana_object$dbscan <- dbscan::dbscan(ana_object$tSNE$Y, eps = input$num_DBSCAN_EPSILON, minPts = input$num_DBSCAN_MIN)
+    if ("DBSCAN" %in% input$chkgrp_TOOLS && (is.null(ana_object$dbscan) || ana_object$dbscan$eps != input$num_DBSCAN_EPSILON || ana_object$dbscan$minPts != input$num_DBSCAN_MIN) ){
+      ana_object$dbscan <- dbscan::dbscan(mat_res(), eps = input$num_DBSCAN_EPSILON, minPts = input$num_DBSCAN_MIN)
 
 
     output$txt_DBSCAN = renderText({
@@ -430,9 +429,15 @@ function(input, output, session) {
   },{
     toggleElement("box_ABOD", condition = "ABOD" %in% input$chkgrp_TOOLS)
 
-    if (is.null(ana_object$abod))
-      ana_object$abod = abodOutlier::abod(matrix, method = "knn", k = input$num_ABOD_KNN)
+    if ("ABOD" %in% input$chkgrp_TOOLS && (is.null(ana_object$abod) || ana_object$abod$k != input$num_ABOD_KNN)){
+      ana_object$abod = list()
+      ana_object$abod$abod = abodOutlier::abod(mat_res(), method = "knn", k = input$num_ABOD_KNN)
+      ana_object$abod$k = input$num_ABOD_KNN
+    }
 
+    # if(!is.null(ana_object$abod)){
+    #   ana_object$abod$result =
+    # }
 
   }, ignoreNULL = F, ignoreInit = T)
 }
