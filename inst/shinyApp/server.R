@@ -337,38 +337,48 @@ function(input, output, session) {
     }, {
     toggleElement("box_PCA", condition = "PCA" %in% input$chkgrp_TOOLS)
 
-    if (is.null(ana_object$pca) && "PCA" %in% input$chkgrp_TOOLS) {
+    if ("PCA" %in% input$chkgrp_TOOLS) {
 
+      if (is.null(ana_object$pca)){
       # calcul the pca
-      ana_object$pca <- ade4::dudi.pca(mat_res(), center = F, scale = F, scannf = F, nf = 5)
+        ana_object$pca = list()
+
+      ana_object$pca$pca <- ade4::dudi.pca(mat_res(), center = F, scale = F, scannf = F, nf = 5)
 
       output$txt_PCA <- renderText(sprintf(
         "Their is %s of the explained variance for the %dnd axis.",
-        scales::percent(cumsum(ana_object$pca$eig) / sum(ana_object$pca$eig))[5], 5
+        scales::percent(cumsum(ana_object$pca$pca$eig) / sum(ana_object$pca$eig))[5], 5
       ))
     }
 
+
     # the plot
     output$plot_PCA <- renderPlot({
-      corcircle <- ggplot(data = ana_object$pca$c1, aes(x = CS1, y = CS2, label = rownames(ana_object$pca$c1))) +
+
+      pca = ana_object$pca$pca
+
+      corcircle <- ggplot(data = pca$c1, aes(x = CS1, y = CS2, label = rownames(pca$c1))) +
         geom_segment(aes(xend = 0, yend = 0), arrow = arrow(ends = "first", length = unit(0.25, "cm"))) +
         ggforce::geom_circle(aes(x0 = 0, y0 = 0, r = 1), inherit.aes = F) +
         geom_label(aes(vjust = ifelse(CS2 < 0, "top", "bottom"))) +
         coord_fixed() + xlab(NULL) + ylab(NULL) + ggtitle("corcircle") + theme_gray()
 
-      axis <- qplot(data = ana_object$pca$l1, x = RS1, y = RS2,
+      axis <- qplot(data = pca$l1, x = RS1, y = RS2,
                     main = "The first two axis",
-                    color = as.character(sphere(ana_object$pca$l1, input$num_PCA)),
-                    shape = as.character(sphere(ana_object$pca$l1, input$num_PCA))) +
+                    color = as.character(sphere(l1, input$num_PCA)),
+                    shape = as.character(sphere(l1, input$num_PCA))) +
         scale_color_manual(name = "Outliers", values = color_true_false) +
         scale_shape_manual(name = "Outliers", values = shape_true_false) +
         theme_gray()
       plot_grid(corcircle, axis, nrow = 1)
+
     })
 
-    output$txt_PCA_out <- renderText(outliers_number(length(sphere(ana_object$pca$l1, input$num_PCA))))
+    output$txt_PCA_out <- renderText(outliers_number(length(sphere(ana_object$pca$pca$l1, input$num_PCA))))
+    } else {
+      ana_object$pca <- NULL
+    }
 
-    if (!"PCA" %in% input$chkgrp_TOOLS) ana_object$pca <- NULL
   }, ignoreNULL = F, ignoreInit = T)
 
 

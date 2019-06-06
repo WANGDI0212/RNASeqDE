@@ -234,11 +234,28 @@ fwrite(extract_function_genes(names), "gene_explication.txt", sep = "\t")
 
 
 # t SNE -------------------------------------------------------------------
-set.seed(2)
-tsne <- Rtsne(matrix, pca = T, normalize = F, pca_center = F, theta = 0, max_iter = 10000)
+set.seed(5)
+tsne <- Rtsne(matrix, pca = F, normalize = F, theta = 0, max_iter = 10000)
+
+tsne_dbscan = dbscan(tsne$Y, 1.5, 5)
+clus = tsne_dbscan$cluster
+col = rainbow(length(unique(clus)) - 1)
+names(col) = as.character( Filter(function(x) x != 0, sort(unique(clus))) )
+
+if (any(clus == 0)){
+  col = c("0" = "#000000", col)
+}
+
+
+
+qplot(x = tsne$Y[, 1], y = tsne$Y[, 2], color = as.character(clus), shape = as.character(clus == 0)) +
+  scale_color_manual(name = "clusters", values = col) +
+  scale_shape_manual(name = "outliers", values = c("TRUE" = 19, "FALSE" = 3)) + theme_bw()
+ggsave("tsne.png")
+
 
 ggplot(NULL, aes(x = tsne$Y[, 1], y = tsne$Y[, 2])) +
-  geom_point(aes(color = dbscan(tsne$Y, 1.5, 5)$cluster == 0)) +
+  geom_point(aes(color = as.character( dbscan(tsne$Y, 1.5, 5)$cluster))) +
   scale_color_discrete(name = "outliers")
 
 
