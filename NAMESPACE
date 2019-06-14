@@ -2,6 +2,7 @@
 
 export(DE)
 export(comparison)
+export(dbscan_analysis)
 export(filter)
 export(normalization)
 export(pca_analysis)

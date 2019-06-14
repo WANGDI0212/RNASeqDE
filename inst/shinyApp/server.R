@@ -341,10 +341,7 @@ function(input, output, session) {
       ana_object$pca <- pca_analysis(mat_res(), pca = ana_object$pca$pca, radius = input$num_PCA)
 
       # the plot
-      output$plot_PCA <- renderPlot({
-        plot_grid(ana_object$pca$corcircle, ana_object$pca$axis, nrow = 1)
-      })
-
+      output$plot_PCA <- renderPlot(plot_grid(ana_object$pca$corcircle, ana_object$pca$axis, nrow = 1))
       output$txt_PCA_out <- renderText(outliers_number(sum(ana_object$pca$result)))
     } else {
       ana_object$pca <- NULL
@@ -361,13 +358,26 @@ function(input, output, session) {
   }, {
     toggleElement("box_tSNE", condition = "tSNE" %in% input$chkgrp_TOOLS)
 
-    ana_object$tsne <- tsne_analysis(data = mat_res, tsne = ana_object$tsne$tsne, epsilon = num_DBSCAN_EPSILON, minpts = num_DBSCAN_MIN)
+    if ("tSNE" %in% input$chkgrp_TOOLS) {
+      ana_object$tsne <- tsne_analysis(data = mat_res(), tsne = ana_object$tsne$tsne, epsilon = input$num_SNE_EPSILON, minpts = input$num_SNE_MIN)
 
-    output$plot_tSNE <- renderPlot(ana_object$tsne$plot)
+      output$plot_tSNE <- renderPlot(ana_object$tsne$plot)
+      output$txt_tSNE <- renderPrint(with(ana_object$tsne$scan, {
+        cl <- unique(cluster)
+        cl <- length(cl[cl != 0L])
 
-    output$txt_tSNE <- renderText(outliers_number(sum(ana_object$tsne$scan$cluster == 0)))
-
-    if (!"tSNE" %in% input$chkgrp_TOOLS) ana_object$tsne <- NULL
+        writeLines(c(
+          paste0("DBSCAN clustering for ", length(cluster), " objects."),
+          paste0(
+            "The clustering contains ", cl, " cluster(s) and ",
+            sum(cluster == 0L), " noise points."
+          )
+        ))
+        print(table(cluster))
+      }))
+    } else {
+      ana_object$tsne <- NULL
+    }
   }, ignoreNULL = F, ignoreInit = T)
 
 
@@ -380,16 +390,26 @@ function(input, output, session) {
   }, {
     toggleElement("box_DBSCAN", condition = "DBSCAN" %in% input$chkgrp_TOOLS)
 
-    if ("DBSCAN" %in% input$chkgrp_TOOLS && (is.null(ana_object$dbscan) || ana_object$dbscan$eps != input$num_DBSCAN_EPSILON || ana_object$dbscan$minPts != input$num_DBSCAN_MIN)) {
-      ana_object$dbscan <- dbscan::dbscan(mat_res(), eps = input$num_DBSCAN_EPSILON, minPts = input$num_DBSCAN_MIN)
+    if ("DBSCAN" %in% input$chkgrp_TOOLS) {
+      ana_object$dbscan <- dbscan_analysis(mat_res(), ana_object$dbscan, epsilon = input$num_DBSCAN_EPSILON, minpts = input$num_DBSCAN_MIN)
+      output$txt_DBSCAN <- renderPrint(
+        with(ana_object$dbscan, {
+          cl <- unique(cluster)
+          cl <- length(cl[cl != 0L])
 
-
-      output$txt_DBSCAN <- renderText({
-        paste0(outliers_number(sum(ana_object$dbscan$cluster == 0)), "\n", ana_object$dbscan)
-      })
+          writeLines(c(
+            paste0("DBSCAN clustering for ", length(cluster), " objects."),
+            paste0(
+              "The clustering contains ", cl, " cluster(s) and ",
+              sum(cluster == 0L), " noise points."
+            )
+          ))
+          print(table(cluster))
+        })
+      )
+    } else {
+      ana_object$dbscan <- NULL
     }
-
-    if (!"DBSCAN" %in% input$chkgrp_TOOLS) ana_object$dbscan <- NULL
   }, ignoreNULL = F, ignoreInit = T)
 
 

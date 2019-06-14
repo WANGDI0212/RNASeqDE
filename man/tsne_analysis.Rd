@@ -4,12 +4,15 @@
 \alias{tsne_analysis}
 \title{tsne analysis}
 \usage{
-tsne_analysis(data, tsne = NULL, epsilon = 0, minpts = 0)
+tsne_analysis(data, tsne = NULL, scan = NULL, epsilon = 0,
+  minpts = 0)
 }
 \arguments{
 \item{data}{the data set}
 
 \item{tsne}{if exist don't reculate it}
+
+\item{scan}{if exist the dbscan of the tsne}
 
 \item{epsilon}{for the dbscan}
 

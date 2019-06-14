@@ -67,36 +67,63 @@ pca_analysis <- function(data, pca = NULL, axis1 = 1, axis2 = 2, radius = 0) {
 #'
 #' @param data the data set
 #' @param tsne if exist don't reculate it
+#' @param scan if exist the dbscan of the tsne
 #' @param epsilon for the dbscan
 #' @param minpts for the minpts
+#'
 #'
 #' @return
 #' @export
 #'
 #' @importFrom Rtsne Rtsne
-#' @importFrom dbscan dbscan
 #' @importFrom ggplot2 ggplot geom_point scale_color_discrete scale_shape_manual ggtitle xlab ylab theme_gray
 #' @importFrom data.table as.data.table
 #'
 #' @examples
 #' ""
-tsne_analysis <- function(data, tsne = NULL, epsilon = 0, minpts = 0) {
+tsne_analysis <- function(data, tsne = NULL, scan = NULL, epsilon = 0, minpts = 0) {
   if (is.null(tsne)) {
     tsne <- Rtsne(data, pca = F, normalize = F, max_iter = 1000, theta = 0)
     tsne$Y <- as.data.table(tsne$Y)
   }
 
-  scan <- dbscan(tsne$Y, eps = epsilon, minPts = minpts)
+  scan <- dbscan_analysis(tsne$Y, epsilon = epsilon, minpts = minpts)
 
   plot <- ggplot(tsne$Y, aes(V1, V2)) +
     geom_point(aes(
       color = as.character(scan$cluster),
-      shape = as.character(scan$cluster == 0)
+      shape = as.character(scan$cluster == 0L)
     )) +
     scale_color_discrete(name = "Cluster") +
     scale_shape_manual(name = "Outliers", values = shape_true_false) +
-    ggtitle("tSNE") + xlab("axis1") + ylab("axis 2") +
+    ggtitle("tSNE") + xlab("axis 1") + ylab("axis 2") +
     theme_gray()
 
   return(list(tsne = tsne, scan = scan, plot = plot))
+}
+
+
+
+
+#' dbscan analysis
+#'
+#' @param data the data we want
+#' @param scan the dbscan if it exist
+#' @param epsilon for the dbscan
+#' @param minpts for the dbscan
+#'
+#' @return
+#' @export
+#'
+#' @importFrom dbscan dbscan
+#'
+#' @examples
+dbscan_analysis = function(data, scan = NULL, epsilon = 0, minpts = 0){
+
+  if (is.null(scan) || any( c(epsilon, minpts) != c(scan$eps, scan$minPts) )){
+    scan = dbscan(data, eps = epsilon, minPts = minpts)
+  }
+
+  return(scan)
+
 }

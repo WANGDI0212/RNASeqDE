@@ -136,19 +136,19 @@ dashboardPage(
           hidden(boxWithId(
             id = "box_tSNE", title = "tSNE", width = 6,
             h4("DBSCAN"),
-            column(3, numericInput("num_SNE_EPSILON", "Epsillon", 0.5, min = 0, step = 0.5)),
+            column(3, numericInput("num_SNE_EPSILON", "Epsillon", 0.5, min = 0, step = 0.1)),
             column(9, sliderInput("num_SNE_MIN", "MinPts", min = 1, max = 20, step = 1, value = 5)),
             br(),
             column(12, plotOutput("plot_tSNE")),
-            textOutput("txt_tSNE")
+            verbatimTextOutput("txt_tSNE")
           )),
 
           # DBSCAN
           hidden(boxWithId(
             id = "box_DBSCAN", title = "DBSCAN", width = 6,
-            column(3, numericInput("num_DBSCAN_EPSILON", "Epsillon", 0.5, min = 0, step = 0.5)),
+            column(3, numericInput("num_DBSCAN_EPSILON", "Epsillon", 0.5, min = 0, step = 0.1)),
             column(9, sliderInput("num_DBSCAN_MIN", "MinPts", min = 1, max = 20, step = 1, value = 5)),
-            textOutput("txt_DBSCAN")
+            verbatimTextOutput("txt_DBSCAN")
           )),
 
           # ABOD
