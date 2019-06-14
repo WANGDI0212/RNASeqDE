@@ -334,51 +334,21 @@ function(input, output, session) {
   observeEvent({
     input$chkgrp_TOOLS
     input$num_PCA
-    }, {
+  }, {
     toggleElement("box_PCA", condition = "PCA" %in% input$chkgrp_TOOLS)
 
     if ("PCA" %in% input$chkgrp_TOOLS) {
+      ana_object$pca <- pca_analysis(mat_res(), pca = ana_object$pca$pca, radius = input$num_PCA)
 
-      if (is.null(ana_object$pca)){
-      # calcul the pca
-        ana_object$pca = list()
+      # the plot
+      output$plot_PCA <- renderPlot({
+        plot_grid(ana_object$pca$corcircle, ana_object$pca$axis, nrow = 1)
+      })
 
-      ana_object$pca$pca <- ade4::dudi.pca(mat_res(), center = F, scale = F, scannf = F, nf = 5)
-
-      output$txt_PCA <- renderText(sprintf(
-        "Their is %s of the explained variance for the %dnd axis.",
-        scales::percent(cumsum(ana_object$pca$pca$eig) / sum(ana_object$pca$eig))[5], 5
-      ))
-    }
-
-
-    # the plot
-    output$plot_PCA <- renderPlot({
-
-      pca = ana_object$pca$pca
-
-      corcircle <- ggplot(data = pca$c1, aes(x = CS1, y = CS2, label = rownames(pca$c1))) +
-        geom_segment(aes(xend = 0, yend = 0), arrow = arrow(ends = "first", length = unit(0.25, "cm"))) +
-        ggforce::geom_circle(aes(x0 = 0, y0 = 0, r = 1), inherit.aes = F) +
-        geom_label(aes(vjust = ifelse(CS2 < 0, "top", "bottom"))) +
-        coord_fixed() + xlab(NULL) + ylab(NULL) + ggtitle("corcircle") + theme_gray()
-
-      axis <- qplot(data = pca$l1, x = RS1, y = RS2,
-                    main = "The first two axis",
-                    color = as.character(sphere(l1, input$num_PCA)),
-                    shape = as.character(sphere(l1, input$num_PCA))) +
-        scale_color_manual(name = "Outliers", values = color_true_false) +
-        scale_shape_manual(name = "Outliers", values = shape_true_false) +
-        theme_gray()
-      plot_grid(corcircle, axis, nrow = 1)
-
-    })
-
-    output$txt_PCA_out <- renderText(outliers_number(length(sphere(ana_object$pca$pca$l1, input$num_PCA))))
+      output$txt_PCA_out <- renderText(outliers_number(sum(ana_object$pca$result)))
     } else {
       ana_object$pca <- NULL
     }
-
   }, ignoreNULL = F, ignoreInit = T)
 
 
@@ -391,21 +361,13 @@ function(input, output, session) {
   }, {
     toggleElement("box_tSNE", condition = "tSNE" %in% input$chkgrp_TOOLS)
 
-    if (is.null(ana_object$tSNE)) {
-      ana_object$tSNE <- tSNE_func(mat_res(), pca = T, normalize = F, pca_center = F, max_iter = 1000)
-    }
-    scan <- dbscan::dbscan(ana_object$tSNE$Y, eps = input$num_SNE_EPSILON, minPts = input$num_SNE_MIN)
+    ana_object$tsne <- tsne_analysis(data = mat_res, tsne = ana_object$tsne$tsne, epsilon = num_DBSCAN_EPSILON, minpts = num_DBSCAN_MIN)
 
-    output$plot_tSNE <- renderPlot({
-      qplot(
-        x = ana_object$tSNE$Y[, 1], y = ana_object$tSNE$Y[, 2], main = "tSNE", xlab = "axis 1", ylab = "axis 2",
-        color = as.character(scan$cluster == 0), shape = as.character(scan$cluster == 0)
-      ) + scale_color_manual(name = "Outliers", values = color_true_false) +
-        scale_shape_manual(name = "Outliers", values = shape_true_false) + theme_gray()
-    })
+    output$plot_tSNE <- renderPlot(ana_object$tsne$plot)
 
-    output$txt_tSNE <- renderText(outliers_number(sum(scan$cluster == 0)))
-    if (!"tSNE" %in% input$chkgrp_TOOLS) ana_object$tSNE <- NULL
+    output$txt_tSNE <- renderText(outliers_number(sum(ana_object$tsne$scan$cluster == 0)))
+
+    if (!"tSNE" %in% input$chkgrp_TOOLS) ana_object$tsne <- NULL
   }, ignoreNULL = F, ignoreInit = T)
 
 
@@ -418,16 +380,16 @@ function(input, output, session) {
   }, {
     toggleElement("box_DBSCAN", condition = "DBSCAN" %in% input$chkgrp_TOOLS)
 
-    if ("DBSCAN" %in% input$chkgrp_TOOLS && (is.null(ana_object$dbscan) || ana_object$dbscan$eps != input$num_DBSCAN_EPSILON || ana_object$dbscan$minPts != input$num_DBSCAN_MIN) ){
+    if ("DBSCAN" %in% input$chkgrp_TOOLS && (is.null(ana_object$dbscan) || ana_object$dbscan$eps != input$num_DBSCAN_EPSILON || ana_object$dbscan$minPts != input$num_DBSCAN_MIN)) {
       ana_object$dbscan <- dbscan::dbscan(mat_res(), eps = input$num_DBSCAN_EPSILON, minPts = input$num_DBSCAN_MIN)
 
 
-    output$txt_DBSCAN = renderText({
-      paste0(outliers_number(sum(ana_object$dbscan$cluster == 0)), "\n", ana_object$dbscan)
-    })
+      output$txt_DBSCAN <- renderText({
+        paste0(outliers_number(sum(ana_object$dbscan$cluster == 0)), "\n", ana_object$dbscan)
+      })
     }
 
-    if(!"DBSCAN" %in% input$chkgrp_TOOLS) ana_object$dbscan = NULL
+    if (!"DBSCAN" %in% input$chkgrp_TOOLS) ana_object$dbscan <- NULL
   }, ignoreNULL = F, ignoreInit = T)
 
 
@@ -436,18 +398,17 @@ function(input, output, session) {
     input$chkgrp_TOOLS
     input$num_ABOD_KNN
     input$num_ABOD_QUANTILE
-  },{
+  }, {
     toggleElement("box_ABOD", condition = "ABOD" %in% input$chkgrp_TOOLS)
 
-    if ("ABOD" %in% input$chkgrp_TOOLS && (is.null(ana_object$abod) || ana_object$abod$k != input$num_ABOD_KNN)){
-      ana_object$abod = list()
-      ana_object$abod$abod = abodOutlier::abod(mat_res(), method = "knn", k = input$num_ABOD_KNN)
-      ana_object$abod$k = input$num_ABOD_KNN
+    if ("ABOD" %in% input$chkgrp_TOOLS && (is.null(ana_object$abod) || ana_object$abod$k != input$num_ABOD_KNN)) {
+      ana_object$abod <- list()
+      ana_object$abod$abod <- abodOutlier::abod(mat_res(), method = "knn", k = input$num_ABOD_KNN)
+      ana_object$abod$k <- input$num_ABOD_KNN
     }
 
     # if(!is.null(ana_object$abod)){
     #   ana_object$abod$result =
     # }
-
   }, ignoreNULL = F, ignoreInit = T)
 }

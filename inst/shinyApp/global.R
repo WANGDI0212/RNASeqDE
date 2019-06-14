@@ -1,4 +1,4 @@
-library(RNASeqDE)
+devtools::load_all(path = '/data/RNA-seq_project/pipeline/RNASeqDE/')
 library(reactlog)
 library(rhandsontable)
 library(cowplot)
@@ -66,14 +66,7 @@ heatmap_ggplot <- function(x, title = NULL) {
 tSNE_func = repeatable(Rtsne::Rtsne, seed = 5)
 
 
-# for the sphere
-sphere <- function(x, radius) {
-  center <- apply(x, 2, mean)
 
-  vec_dist <- rowSums(sweep(x, 2, center, "-")^2) >= radius^2
-
-  return(vec_dist)
-}
 
 outliers_number = function(nb){
   sprintf("There is %d outliers", nb)
