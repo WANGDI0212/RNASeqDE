@@ -154,9 +154,9 @@ dashboardPage(
           # ABOD
           hidden(boxWithId(
             id = "box_ABOD", title = "ABOD", width = 6,
-            column(3, sliderInput("num_ABOD_KNN", "Number of nearest neighbours", 20, min = 0, max = 40, step = 1)),
-            column(3, sliderInput("num_ABOD_QUANTILE", "quantile", 0.05, min = 0, max = 1, step = 0.01)),
-            textOutput('txt_ABOD')
+            column(6, sliderInput("num_ABOD_KNN", "Number of nearest neighbours", 20, min = 1, max = 40, step = 1)),
+            column(6, sliderInput("num_ABOD_QUANTILE", "quantile", 0.05, min = 0, max = 1, step = 0.01)),
+            verbatimTextOutput('txt_ABOD')
           ))
         )
       )

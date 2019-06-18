@@ -62,12 +62,8 @@ heatmap_ggplot <- function(x, title = NULL) {
 }
 
 
-# to do the tSNE function with a seed fixed
-tSNE_func = repeatable(Rtsne::Rtsne, seed = 5)
 
-
-
-
+# to print the the number of outliers
 outliers_number = function(nb){
   sprintf("There is %d outliers", nb)
 }

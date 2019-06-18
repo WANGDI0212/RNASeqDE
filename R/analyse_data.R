@@ -13,7 +13,7 @@
 #'
 #' @importFrom ade4 dudi.pca
 #' @importFrom ggforce geom_circle
-#' @importFrom ggplot2 ggplot geom_segment geom_label coord_fixed xlab ylab ggtitle theme_gray scale_color_manual scale_shape_manual qplot
+#' @importFrom ggplot2 ggplot geom_segment geom_label coord_fixed xlab ylab ggtitle theme_gray scale_color_manual scale_shape_manual qplot arrow
 #'
 #' @examples
 #' ""
@@ -33,11 +33,15 @@ pca_analysis <- function(data, pca = NULL, axis1 = 1, axis2 = 2, radius = 0) {
 
   title_axis <- sprintf("axis %s - axis %s", axis1, axis2)
 
+  color_circle = "firebrick"
+
   corcircle <- ggplot(data = NULL, aes(x = pca$c1[, axis1], y = pca$c1[, axis2], label = rownames(pca$c1))) +
+    geom_vline(xintercept = 0, color = color_circle) + geom_hline(yintercept = 0, color = color_circle) +
     geom_segment(aes(xend = 0, yend = 0), arrow = arrow(ends = "first", length = unit(0.25, "cm"))) +
-    geom_circle(aes(x0 = 0, y0 = 0, r = 1), inherit.aes = F) +
+    geom_circle(aes(x0 = 0, y0 = 0, r = 1), inherit.aes = F, color = color_circle) +
     geom_label(aes(vjust = ifelse(pca$c1[, axis2] < 0, "top", "bottom"))) +
-    coord_fixed() + xlab(NULL) + ylab(NULL) + ggtitle("corcircle", title_axis) + theme_gray()
+    coord_fixed() + labs(x = NULL, y = NULL, title = "corcircle", subtitle = title_axis) +
+    theme_gray()
 
 
   color_axis <- sphere(pca$l1, radius)
@@ -49,7 +53,7 @@ pca_analysis <- function(data, pca = NULL, axis1 = 1, axis2 = 2, radius = 0) {
   ) +
     scale_color_manual(name = "Outliers", values = color_true_false) +
     scale_shape_manual(name = "Outliers", values = shape_true_false) +
-    ggtitle(title_axis)
+    labs(x = paste('axis', axis1), y = paste("axis", axis2), title = title_axis)
   theme_gray()
 
 
@@ -123,7 +127,48 @@ dbscan_analysis = function(data, scan = NULL, epsilon = 0, minpts = 0){
   if (is.null(scan) || any( c(epsilon, minpts) != c(scan$eps, scan$minPts) )){
     scan = dbscan(data, eps = epsilon, minPts = minpts)
   }
-
   return(scan)
-
 }
+
+#' Print the dbscan
+#'
+#' @param scan the dbscan
+#'
+#' @return
+#'
+#' @examples
+print_dbscan = function(scan){
+  output = capture.output(scan)
+  output = output[ c(0,1) - length(output) ]
+
+  return( paste(output, collapse = "\n") )
+}
+
+#' abod analysis
+#'
+#' @param data the data we want to analyze
+#' @param abod the abod if it exist
+#' @param k for the abod
+#'
+#' @return
+#' @export
+#'
+#' @importFrom abodOutlier abod
+#'
+#' @examples
+abod_analysis = function(data, abod = NULL, k = 15){
+
+  if (is.null(abod) || k != abod$k){
+    abod = list()
+    capture.output( abod$abod <- abod(data, method = "knn", k = k) )
+    abod$k = k
+  }
+
+  return(abod)
+}
+
+
+
+
+
+

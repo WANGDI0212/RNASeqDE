@@ -243,10 +243,6 @@ function(input, output, session) {
         keep.row,
         on = "rn"
       ], "heatmap non contrasted")
-      #   pheatmap(
-      #   t(as.matrix(dcast(data_comp, rn ~ comp_name, value.var = "logFC")[keep.row], rownames = "rn")),
-      #   scale = "row", main = "heatmap non contrasted", show_colnames = F, silent = T
-      # )
 
       plot_list$heatmap_contrast <- heatmap_ggplot(
         data_comp[pval_adj <= input$num_Pvalue],
@@ -288,7 +284,7 @@ function(input, output, session) {
 
 
     output$plot_COMP <- renderPlot({
-      a <- gg_begin + geom_point(aes(x = AveLogCPM, y = logFC))
+      a <- gg_begin + geom_point(aes(x = AveLogCPM, y = logFC)) + geom_smooth(aes(x = AveLogCPM, y = logFC))
       b <- gg_begin + geom_point(aes(x = logFC, y = -log10(pval_adj))) + ylab("-log10(adj PValue)")
 
       plot_grid(a, b, nrow = 1, align = "v")
@@ -362,19 +358,7 @@ function(input, output, session) {
       ana_object$tsne <- tsne_analysis(data = mat_res(), tsne = ana_object$tsne$tsne, epsilon = input$num_SNE_EPSILON, minpts = input$num_SNE_MIN)
 
       output$plot_tSNE <- renderPlot(ana_object$tsne$plot)
-      output$txt_tSNE <- renderPrint(with(ana_object$tsne$scan, {
-        cl <- unique(cluster)
-        cl <- length(cl[cl != 0L])
-
-        writeLines(c(
-          paste0("DBSCAN clustering for ", length(cluster), " objects."),
-          paste0(
-            "The clustering contains ", cl, " cluster(s) and ",
-            sum(cluster == 0L), " noise points."
-          )
-        ))
-        print(table(cluster))
-      }))
+      output$txt_tSNE <- renderText(print_dbscan(ana_object$tsne$scan))
     } else {
       ana_object$tsne <- NULL
     }
@@ -392,21 +376,7 @@ function(input, output, session) {
 
     if ("DBSCAN" %in% input$chkgrp_TOOLS) {
       ana_object$dbscan <- dbscan_analysis(mat_res(), ana_object$dbscan, epsilon = input$num_DBSCAN_EPSILON, minpts = input$num_DBSCAN_MIN)
-      output$txt_DBSCAN <- renderPrint(
-        with(ana_object$dbscan, {
-          cl <- unique(cluster)
-          cl <- length(cl[cl != 0L])
-
-          writeLines(c(
-            paste0("DBSCAN clustering for ", length(cluster), " objects."),
-            paste0(
-              "The clustering contains ", cl, " cluster(s) and ",
-              sum(cluster == 0L), " noise points."
-            )
-          ))
-          print(table(cluster))
-        })
-      )
+      output$txt_DBSCAN <- renderText(print_dbscan(ana_object$dbscan))
     } else {
       ana_object$dbscan <- NULL
     }
@@ -421,14 +391,17 @@ function(input, output, session) {
   }, {
     toggleElement("box_ABOD", condition = "ABOD" %in% input$chkgrp_TOOLS)
 
-    if ("ABOD" %in% input$chkgrp_TOOLS && (is.null(ana_object$abod) || ana_object$abod$k != input$num_ABOD_KNN)) {
-      ana_object$abod <- list()
-      ana_object$abod$abod <- abodOutlier::abod(mat_res(), method = "knn", k = input$num_ABOD_KNN)
-      ana_object$abod$k <- input$num_ABOD_KNN
+    if ("ABOD" %in% input$chkgrp_TOOLS) {
+      ana_object$abod <- abod_analysis(mat_res(), ana_object$abod, k = input$num_ABOD_KNN)
+      output$txt_ABOD <- renderPrint(with(ana_object$abod, {
+        cat("The summary of the analysis : ",
+          paste(capture.output(summary(abod)), collapse = "\n"),
+          outliers_number(sum(abod < quantile(abod, input$num_ABOD_QUANTILE))),
+          sep = "\n\n"
+        )
+      }))
+    } else {
+      ana_object$abod <- NULL
     }
-
-    # if(!is.null(ana_object$abod)){
-    #   ana_object$abod$result =
-    # }
   }, ignoreNULL = F, ignoreInit = T)
 }
