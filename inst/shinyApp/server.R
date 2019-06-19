@@ -404,4 +404,34 @@ function(input, output, session) {
       ana_object$abod <- NULL
     }
   }, ignoreNULL = F, ignoreInit = T)
+
+
+
+  # ISOFOR box
+  observeEvent({
+    input$chkgrp_TOOLS
+    input$sel_ISOFOR_depth
+    input$sel_ISOFOR_ntree
+    input$sli_ISOFOR_threshold
+  }, {
+    toggleElement("box_ISOFOR", condition = "ISOFOR" %in% input$chkgrp_TOOLS)
+
+    if ("ISOFOR" %in% input$chkgrp_TOOLS) {
+
+      ana_object$isofor <- isofor_analysis(mat_res(), ana_object$isofor,
+        nTrees = as.integer(input$sel_ISOFOR_ntree),
+        phi = 2^as.integer(input$sel_ISOFOR_depth)
+      )
+
+      output$txt_ISOFOR <- renderPrint(with(ana_object$isofor, {
+        cat("The summary of the analysis : ",
+          paste(capture.output(summary(isofor)), collapse = "\n"),
+          outliers_number(sum(isofor > quantile(isofor, input$num_ISOFOR_threshold))),
+          sep = "\n\n"
+        )
+      }))
+    } else {
+      ana_object$isofor <- NULL
+    }
+  }, ignoreNULL = F, ignoreInit = T)
 }

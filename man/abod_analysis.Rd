@@ -4,7 +4,7 @@
 \alias{abod_analysis}
 \title{abod analysis}
 \usage{
-abod_analysis(data, abod = NULL, k = 0)
+abod_analysis(data, abod = NULL, k = 15)
 }
 \arguments{
 \item{data}{the data we want to analyze}

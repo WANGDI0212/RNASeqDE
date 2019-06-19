@@ -155,8 +155,17 @@ dashboardPage(
           hidden(boxWithId(
             id = "box_ABOD", title = "ABOD", width = 6,
             column(6, sliderInput("num_ABOD_KNN", "Number of nearest neighbours", 20, min = 1, max = 40, step = 1)),
-            column(6, sliderInput("num_ABOD_QUANTILE", "quantile", 0.05, min = 0, max = 1, step = 0.01)),
+            column(6, sliderInput("num_ABOD_QUANTILE", "Anomaly Score Threshold", 0.05, min = 0, max = 1, step = 0.01)),
             verbatimTextOutput('txt_ABOD')
+          )),
+
+          # isolation forest
+          hidden(boxWithId(
+            id = "box_ISOFOR", title = "isolation forest", width = 6,
+            sliderInput("num_ISOFOR_threshold", "Anomaly Score Threshold", min = 0, max = 1, step = 0.01, value = 0.95),
+            column(6, selectInput("sel_ISOFOR_depth", "Tree Depth", choices = c(3,4,5,6,7,8), selected=5)),
+            column(6, selectInput("sel_ISOFOR_ntree", "Number of Trees", choices = c(10,20,50,100,200,500), selected = 50)),
+            verbatimTextOutput("txt_ISOFOR")
           ))
         )
       )

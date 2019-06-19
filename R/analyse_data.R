@@ -169,6 +169,52 @@ abod_analysis = function(data, abod = NULL, k = 15){
 
 
 
+#' isolation forest
+#'
+#' @param data for the analize
+#' @param isofor the object if it exist to not
+#' @param nTrees see [isofor::iForest()]
+#' @param phi see [isofor::iForest()]
+#'
+#' @return
+#' @export
+#'
+#' @importFrom isofor iForest
+#'
+#' @examples
+isofor_analysis = function(data, isofor = NULL, nTrees = 100, phi = 8){
+
+  if(is.null(isofor) || any(c(nTrees, phi) != c(isofor$nTrees, isofor$phi)) ){
+    isofor = iForest(data, nTrees, phi)
+    isofor = list(isofor = predict(isofor, data), nTrees = nTrees, phi = phi)
+  }
+
+  return(isofor)
+}
 
 
+
+
+#' self organizing map analysis
+#'
+#' @param data
+#' @param som
+#'
+#' @return
+#' @export
+#'
+#' @importFrom kohonen somgrid som
+#'
+#' @examples
+som_analysis = function(data, som = NULL){
+
+  if(is.null(som)){
+
+    som_grid <- somgrid(xdim = 10, ydim = 10, topo = "hexagonal", toroidal = F, neighbourhood.fct = "gaussian")
+    som_model <- som(matrix, grid = som_grid, rlen = 200)
+
+  }
+
+  return(som)
+}
 
