@@ -45,6 +45,7 @@ filter <- function(counts) {
 #' @importFrom edgeR DGEList calcNormFactors
 #' @importFrom limma plotMDS
 #' @importFrom ggplot2 ggplot ggtitle geom_point geom_text xlab ylab scale_color_discrete aes
+#' @importFrom ggrepel geom_text_repel
 #'
 #' @examples
 normalization <- function(counts, groups) {
@@ -73,7 +74,7 @@ normalization <- function(counts, groups) {
   gg_list <- lapply(gg_list, function(x) {
     x +
       geom_point() +
-      geom_text(aes(vjust = "top"), show.legend = F, inherit.aes = T) +
+      geom_text_repel(show.legend = F, inherit.aes = T) +
       xlab("Leading logFC dimension 1") +
       ylab("Leading logFC dimension 2") +
       scale_color_discrete(name = "groups") + theme_gray()
