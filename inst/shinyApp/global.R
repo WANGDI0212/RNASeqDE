@@ -2,6 +2,12 @@ devtools::load_all(path = '/data/RNA-seq_project/pipeline/RNASeqDE/')
 library(reactlog)
 library(rhandsontable)
 library(cowplot)
+library(shinydashboardPlus)
+library(shinydashboard)
+library(shinyjs)
+library(shinyalert)
+library(shinyFeedback)
+library(shiny)
 
 theme_set(theme_gray())
 

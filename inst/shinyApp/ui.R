@@ -1,9 +1,9 @@
-dashboardPage(
-  dashboardHeader(title = "RNA-seq DE application"),
+dashboardPagePlus(
+  dashboardHeaderPlus(title = "RNA-seq DE"),
   dashboardSidebar(
     sidebarMenu(
       id = "mnu_MENU",
-      menuItem("Load dataset and parameters", tabName = "tab_LOAD"),
+      menuItem("Load dataset and parameters", tabName = "tab_LOAD", icon = icon("database")),
       menuItem("Result", tabName = "tab_RES"),
       menuItem("Analysis", tabName = "tab_ANA")
     )
@@ -62,17 +62,14 @@ dashboardPage(
             # table contrast
             h3("contrast"),
             rHandsontableOutput("table_CONTRAST")
-            #           tags$script("$(document).on('click', '#table_SUMMARY_column button', function () {
-            #                 Shiny.onInputChange('lastClickId',this.id);
-            #                 Shiny.onInputChange('lastClick', Math.random())
-            # });")
           )),
           column(1, offset = 11, hidden(
             actionButton("but_DATASET", "Continue"),
             tags$style("#but_DATASET {
                           background-color: #0080ff;
                           color: white;
-                       }")
+                       }"),
+            downloadLink()
           ))
         )
       ),
@@ -141,6 +138,12 @@ dashboardPage(
             br(),
             column(12, plotOutput("plot_tSNE")),
             verbatimTextOutput("txt_tSNE")
+          )),
+
+          # SOM
+          hidden(boxWithId(
+            id = "box_SOM", title = "Self Organizing Map", width = 12,
+            column(12, plotOutput("plot_SOM", height = "1000px"))
           )),
 
           # DBSCAN

@@ -22,16 +22,16 @@ Imports:
 	Rtsne,
 	isofor,
 	abodOutlier,
-	gridGraphics
+	gridGraphics,
+	shinydashboardPlus,
+	shinyjs,
+	shinydashboard,
+	shinyalert,
+	shinyFeedback,
+	shiny
 Depends: 
 	R(>= 3.0),
 	edgeR,
-	pheatmap,
-	shiny,
-	shinydashboard,
-	shinyjs,
-	shinyalert,
-	shinyFeedback,
 	data.table (>= 1.9.8),
 RoxygenNote: 6.1.1
 Roxygen: list(markdown = TRUE)

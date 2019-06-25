@@ -434,4 +434,31 @@ function(input, output, session) {
       ana_object$isofor <- NULL
     }
   }, ignoreNULL = F, ignoreInit = T)
+
+
+  # SOM box
+  observeEvent({
+    input$chkgrp_TOOLS
+  }, {
+    toggleElement("box_SOM", condition = "SOM" %in% input$chkgrp_TOOLS)
+
+    if ("SOM" %in% input$chkgrp_TOOLS) {
+
+      update = is.null(ana_object$som)
+      print(update)
+
+      isolate({
+
+      ana_object$som = som_analysis(mat_res(), som = ana_object$som$som)
+
+      output$plot_SOM = renderPlot(
+        with(ana_object$som, plot_grid(plot_grid(count, dist), codes, nrow = 2, rel_heights = c(1, 2)))
+      )
+      })
+    } else {
+      ana_object$som <- NULL
+    }
+  }, ignoreNULL = F, ignoreInit = T)
+
+
 }
