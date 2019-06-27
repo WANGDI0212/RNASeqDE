@@ -63,13 +63,13 @@ dashboardPagePlus(
             h3("contrast"),
             rHandsontableOutput("table_CONTRAST")
           )),
-          column(1, offset = 11, hidden(
+          column(3, offset = 9, hidden(
+            downloadButton("down_PARAM", "Download the parameters"),
             actionButton("but_DATASET", "Continue"),
             tags$style("#but_DATASET {
                           background-color: #0080ff;
                           color: white;
-                       }"),
-            downloadLink()
+                       }")
           ))
         )
       ),
@@ -93,8 +93,9 @@ dashboardPagePlus(
             title = "heatmaps", width = 12,
             plotOutput("plot_HEATMAP")
           ),
-          column(1,
-            offset = 11,
+          column(3,
+            offset = 9,
+            downloadButton("down_RESULT"),
             actionButton("but_RES", "Continue"),
             tags$style("#but_RES {
                           background-color: #0080ff;
@@ -169,7 +170,9 @@ dashboardPagePlus(
             column(6, selectInput("sel_ISOFOR_depth", "Tree Depth", choices = c(3,4,5,6,7,8), selected=5)),
             column(6, selectInput("sel_ISOFOR_ntree", "Number of Trees", choices = c(10,20,50,100,200,500), selected = 50)),
             verbatimTextOutput("txt_ISOFOR")
-          ))
+          )),
+
+          downloadButton("down_ANA")
         )
       )
     )

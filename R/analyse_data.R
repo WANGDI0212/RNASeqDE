@@ -47,7 +47,6 @@ pca_analysis <- function(data, pca = NULL, axis1 = 1, axis2 = 2, radius = 0) {
   color_axis <- sphere(pca$l1, radius)
   axis <- qplot(
     x = pca$l1[, axis1], y = pca$l1[, axis2],
-    main = "The first two axis",
     color = as.character(color_axis),
     shape = as.character(color_axis)
   ) +
@@ -103,7 +102,7 @@ tsne_analysis <- function(data, tsne = NULL, scan = NULL, epsilon = 0, minpts = 
     ggtitle("tSNE") + xlab("axis 1") + ylab("axis 2") +
     theme_gray()
 
-  return(list(tsne = tsne, scan = scan, plot = plot))
+  return(list(tsne = tsne, scan = scan, tsne_plot = plot))
 }
 
 

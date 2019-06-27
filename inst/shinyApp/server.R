@@ -40,6 +40,7 @@ function(input, output, session) {
       showElement("box_DATASET")
       showElement("box_PARAM")
       showElement("but_DATASET")
+      showElement("down_PARAM")
 
 
 
@@ -174,7 +175,15 @@ function(input, output, session) {
   })
 
 
-
+  output$down_PARAM = downloadHandler(
+    filename = function(){
+      paste0("Parameters", Sys.Date(), ".json")
+    },
+    content = function(file){
+      write_parameter_file(reactiveValuesToList(param), file)
+    },
+    contentType = "application/json"
+  )
 
 
   # Result ------------------------------------------------------------------
@@ -250,17 +259,6 @@ function(input, output, session) {
       )
     }
     output$plot_HEATMAP <- renderPlot(plot_grid(plot_list$heatmap_non_contrast, plot_list$heatmap_contrast, nrow = 1, align = "v"))
-
-    # sapply( split(table, by = "comp_name"), function(subdata){
-    #   gg_begin <- ggplot(subdata, aes(col = pval_adj < input$num_Pvalue, shape = pval_adj < input$num_Pvalue)) +
-    #     ggtitle(subdata[, unique(comp_name)]) +
-    #     scale_color_manual(name = paste("adj PValue <", input$num_Pvalue), values = c("blue", "red")) +
-    #     scale_shape_manual(name = paste("adj PValue <", input$num_Pvalue), values = c(16, 3))
-    #
-    #   plot_grid(gg_begin + geom_point(aes(x = AveLogCPM, y = logFC)),
-    #             gg_begin + geom_point(aes(x = logFC, y = -log10(pval_adj))) + ylab("-log10(adj PValue)"),
-    #             nrow = 1, align = "v")
-    # }, simplify = F)
   }, ignoreInit = T)
 
 
@@ -292,6 +290,31 @@ function(input, output, session) {
   }, ignoreInit = T)
 
 
+
+  output$down_RESULT = downloadHandler(
+    filename = function() paste0("result_", Sys.Date(), ".zip"),
+    contentType = "application/zip",
+    content = function(file){
+      path = file.path(tempdir(), "result")
+      plot_list_save(reactiveValuesToList(plot_list), path)
+      fwrite( data_comp, file.path(path, "comparison.csv"), sep = "\t")
+
+      sapply( split(data_comp, by = "comp_name"), function(subdata){
+        title = subdata[, unique(comp_name)]
+
+        gg_begin <- ggplot(subdata, aes(col = pval_adj < input$num_Pvalue, shape = pval_adj < input$num_Pvalue)) +
+          ggtitle(title) +
+          scale_color_manual(name = paste("adj PValue <", input$num_Pvalue), values = c("blue", "red")) +
+          scale_shape_manual(name = paste("adj PValue <", input$num_Pvalue), values = c(16, 3))
+
+        ggsave(paste0(title, ".png"), gg_begin + geom_point(aes(x = AveLogCPM, y = logFC)), path = path)
+        ggsave(paste0(title, "_volvcano.png"), gg_begin + geom_point(aes(x = logFC, y = -log10(pval_adj))) + ylab("-log10(adj PValue)"), path = path)
+
+      }, simplify = F)
+
+      zip(file, path, flags = "-jr9Xm")
+    }
+    )
 
 
 
@@ -357,7 +380,7 @@ function(input, output, session) {
     if ("tSNE" %in% input$chkgrp_TOOLS) {
       ana_object$tsne <- tsne_analysis(data = mat_res(), tsne = ana_object$tsne$tsne, epsilon = input$num_SNE_EPSILON, minpts = input$num_SNE_MIN)
 
-      output$plot_tSNE <- renderPlot(ana_object$tsne$plot)
+      output$plot_tSNE <- renderPlot(ana_object$tsne$tsne_plot)
       output$txt_tSNE <- renderText(print_dbscan(ana_object$tsne$scan))
     } else {
       ana_object$tsne <- NULL
@@ -459,6 +482,23 @@ function(input, output, session) {
       ana_object$som <- NULL
     }
   }, ignoreNULL = F, ignoreInit = T)
+
+  output$down_ANA = downloadHandler(
+    filename = function() paste0("analysis_", Sys.Date(), ".zip"),
+    contentType = "application/zip",
+    content = function(file){
+      list_ana = reactiveValuesToList(ana_object)
+      path = file.path(tempdir(), "analysis")
+      dir.create(path, showWarnings = F, recursive = T)
+      rownames(mat_res())
+
+      pca_save(list_ana$pca$pca, input$num_PCA, path)
+      plot_list_save(list_ana$tsne, path)
+      plot_list_save(list_ana$som, path)
+
+      zip(file, path, flags = "-jr9Xm")
+    }
+  )
 
 
 }
