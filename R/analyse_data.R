@@ -157,7 +157,7 @@ print_dbscan <- function(scan) {
 abod_analysis <- function(data, abod = NULL, k = 15) {
   if (is.null(abod) || k != abod$k) {
     abod <- list()
-    capture.output(abod$abod <- abod(data, method = "knn", k = k))
+    capture.output(abod$abod <- suppressWarnings(abod(data, method = "knn", k = k)))
     abod$k <- k
   }
 
@@ -199,8 +199,8 @@ isofor_analysis <- function(data, isofor = NULL, nTrees = 100, phi = 8) {
 #' @return
 #' @export
 #'
-#' @importFrom kohonen somgrid som unit.distances object.distances
-#' @importFrom data.table := as.data.table
+#' @importFrom kohonen somgrid som unit.distances object.distances getCodes
+#' @importFrom data.table := as.data.table melt
 #' @importFrom ggplot2 ggplot geom_label scale_fill_gradientn theme_void theme ggtitle geom_col coord_polar facet_wrap
 #' @importFrom ggplot2 scale_fill_manual element_blank element_text
 #' @importFrom ggforce geom_circle
@@ -241,12 +241,16 @@ som_analysis <- function(data, som = NULL) {
   data_som[as.data.table(table(pred$unit.classif), keep.rownames = T), on = c("rn" = "V1"), N := i.N]
   data_som[, dist := neigh.dist(som)]
 
-  count <- theme_som(ggplot(data_som, aes(x0 = x, y0 = y, fill = N, r = 0.5, label = rn)) +
+  count_g <- theme_som(ggplot(data_som, aes(x0 = x, y0 = y, fill = N, r = 0.5, label = rn)) +
     ggtitle("Counts plot"))
 
-  dist <- theme_som(ggplot(data_som, aes(x0 = x, y0 = y, fill = dist, r = 0.5, label = rn)) +
+  dist_g <- theme_som(ggplot(data_som, aes(x0 = x, y0 = y, fill = dist, r = 0.5, label = rn)) +
     ggtitle("Neighbour distance plot"))
 
+
+  codes = as.data.table(getCodes(som_model), keep.rownames = T)
+  codes[, rn := gsub("V", "", rn)]
+  codes = melt(codes, id.vars = 1)
 
   codes_g <- ggplot(codes, aes(x = "", y = value, group = variable, color = variable, fill = variable)) +
     geom_col(width = 1) +
@@ -255,5 +259,5 @@ som_analysis <- function(data, som = NULL) {
     scale_fill_manual(name = NULL, values = coolBlueHotRed(codes[, length(unique(variable))]), aesthetics = c("colour", "fill")) +
     theme(plot.title = element_text(hjust = 0.5, vjust = 1))
 
-  return(list(som = som, count = count, dist = dist, codes = codes_g))
+  return(list(som = som, count = count_g, dist = dist_g, codes = codes_g, data = data_som, pred = pred$unit.classif))
 }

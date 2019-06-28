@@ -4,8 +4,8 @@ dashboardPagePlus(
     sidebarMenu(
       id = "mnu_MENU",
       menuItem("Load dataset and parameters", tabName = "tab_LOAD", icon = icon("database")),
-      menuItem("Result", tabName = "tab_RES"),
-      menuItem("Analysis", tabName = "tab_ANA")
+      menuItem("Result", tabName = "tab_RES", icon = icon("dragon")),
+      menuItem("Analysis", tabName = "tab_ANA", icon = icon("analytics"))
     )
   ),
   dashboardBody(
@@ -144,6 +144,8 @@ dashboardPagePlus(
           # SOM
           hidden(boxWithId(
             id = "box_SOM", title = "Self Organizing Map", width = 12,
+            sliderInput("num_SOM_QUANTILE", "Anomaly Score Threshold", 0.95, min = 0, max = 1, step = 0.01),
+            textOutput("txt_SOM"),
             column(12, plotOutput("plot_SOM", height = "1000px"))
           )),
 

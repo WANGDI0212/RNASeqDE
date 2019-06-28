@@ -175,11 +175,11 @@ function(input, output, session) {
   })
 
 
-  output$down_PARAM = downloadHandler(
-    filename = function(){
+  output$down_PARAM <- downloadHandler(
+    filename = function() {
       paste0("Parameters", Sys.Date(), ".json")
     },
-    content = function(file){
+    content = function(file) {
       write_parameter_file(reactiveValuesToList(param), file)
     },
     contentType = "application/json"
@@ -281,26 +281,27 @@ function(input, output, session) {
       scale_shape_manual(name = "Outliers", values = shape_true_false) + theme_gray()
 
 
-    output$plot_COMP <- renderPlot({
+    output$plot_COMP <- suppressMessages(renderPlot({
       a <- gg_begin + geom_point(aes(x = AveLogCPM, y = logFC)) + geom_smooth(aes(x = AveLogCPM, y = logFC))
       b <- gg_begin + geom_point(aes(x = logFC, y = -log10(pval_adj))) + ylab("-log10(adj PValue)")
 
       plot_grid(a, b, nrow = 1, align = "v")
-    })
+    }))
   }, ignoreInit = T)
 
 
 
-  output$down_RESULT = downloadHandler(
+  output$down_RESULT <- downloadHandler(
     filename = function() paste0("result_", Sys.Date(), ".zip"),
     contentType = "application/zip",
-    content = function(file){
-      path = file.path(tempdir(), "result")
+    content = function(file) {
+      showNotification("In prepartion for the download")
+      path <- file.path(tempdir(), "result")
       plot_list_save(reactiveValuesToList(plot_list), path)
-      fwrite( data_comp, file.path(path, "comparison.csv"), sep = "\t")
+      fwrite(data_comp, file.path(path, "comparison.csv"), sep = "\t")
 
-      sapply( split(data_comp, by = "comp_name"), function(subdata){
-        title = subdata[, unique(comp_name)]
+      sapply(split(data_comp, by = "comp_name"), function(subdata) {
+        title <- subdata[, unique(comp_name)]
 
         gg_begin <- ggplot(subdata, aes(col = pval_adj < input$num_Pvalue, shape = pval_adj < input$num_Pvalue)) +
           ggtitle(title) +
@@ -309,12 +310,11 @@ function(input, output, session) {
 
         ggsave(paste0(title, ".png"), gg_begin + geom_point(aes(x = AveLogCPM, y = logFC)), path = path)
         ggsave(paste0(title, "_volvcano.png"), gg_begin + geom_point(aes(x = logFC, y = -log10(pval_adj))) + ylab("-log10(adj PValue)"), path = path)
-
       }, simplify = F)
 
       zip(file, path, flags = "-jr9Xm")
     }
-    )
+  )
 
 
 
@@ -347,7 +347,7 @@ function(input, output, session) {
   # the object of the analysis
   ana_object <- reactiveValues()
 
-
+  observeEvent(input$chkgrp_TOOLS, toggleElement("down_ANA", condition = !is.null(input$chkgrp_TOOLS)), ignoreNULL = F)
 
   # PCA box
   observeEvent({
@@ -440,7 +440,6 @@ function(input, output, session) {
     toggleElement("box_ISOFOR", condition = "ISOFOR" %in% input$chkgrp_TOOLS)
 
     if ("ISOFOR" %in% input$chkgrp_TOOLS) {
-
       ana_object$isofor <- isofor_analysis(mat_res(), ana_object$isofor,
         nTrees = as.integer(input$sel_ISOFOR_ntree),
         phi = 2^as.integer(input$sel_ISOFOR_depth)
@@ -466,31 +465,62 @@ function(input, output, session) {
     toggleElement("box_SOM", condition = "SOM" %in% input$chkgrp_TOOLS)
 
     if ("SOM" %in% input$chkgrp_TOOLS) {
+      update <- is.null(ana_object$som)
 
-      update = is.null(ana_object$som)
-      print(update)
+      if(update){
+        ana_object$som <- som_analysis(mat_res(), som = ana_object$som$som)
 
-      isolate({
+        output$plot_SOM <- renderPlot(
+          with(ana_object$som, plot_grid(plot_grid(count, dist), codes, nrow = 2, rel_heights = c(1, 2)))
+        )
+      }
 
-      ana_object$som = som_analysis(mat_res(), som = ana_object$som$som)
+      # render the text of outliers
+      output$txt_SOM = renderText(outliers_number(ana_object$som$data[dist > quantile(dist, input$num_SOM_QUANTILE), sum(N, na.rm = T)]))
 
-      output$plot_SOM = renderPlot(
-        with(ana_object$som, plot_grid(plot_grid(count, dist), codes, nrow = 2, rel_heights = c(1, 2)))
-      )
-      })
     } else {
       ana_object$som <- NULL
     }
   }, ignoreNULL = F, ignoreInit = T)
 
-  output$down_ANA = downloadHandler(
+
+
+
+
+  # download the analysis
+  output$down_ANA <- downloadHandler(
     filename = function() paste0("analysis_", Sys.Date(), ".zip"),
     contentType = "application/zip",
-    content = function(file){
-      list_ana = reactiveValuesToList(ana_object)
-      path = file.path(tempdir(), "analysis")
+    content = function(file) {
+
+      showNotification("In prepartion for the download")
+
+      list_ana <- reactiveValuesToList(ana_object)
+      path <- file.path(tempdir(), "analysis")
       dir.create(path, showWarnings = F, recursive = T)
-      rownames(mat_res())
+      data = as.data.table(mat_res(), keep.rownames = T)
+
+      nb_col_before = ncol(data)
+      with(list_ana, {
+        suppressWarnings(data[, ':='(som_nb_neuron_cluster = som$pred,
+                  tsne_cluster = tsne$scan$cluster,
+                  dbscan_cluster = dbscan$cluster,
+                  outliers_pca = pca$result,
+                  outliers_tsne = if (is.null(tsne)) NULL else tsne$scan$cluster == 0,
+                  outliers_som = if (is.null(som)) NULL else with(som, pred %in% as.numeric(data[dist > quantile(dist, 0.95), rn])),
+                  outliers_dbscan = if (is.null(dbscan)) NULL else dbscan$cluster == 0,
+                  outliers_abod = if(is.null(abod)) NULL else with(abod, abod < quantile(abod, 0.05)),
+                  outliers_isolation_forest = if(is.null(isofor)) NULL else with(isofor, isofor > quantile(isofor, 0.95))
+                  )])
+      })
+
+
+
+
+      data[, outliers_method := rowSums(.SD) / ncol(.SD), .SDcols = replace(grepl("^outliers", names(data)), 1:nb_col_before, F)]
+
+      fwrite( data[outliers_method != 0, .SD, .SDcols = replace(grepl("^outliers", names(data)), 1:nb_col_before, T)], file.path(path, "outliers.csv"), sep = "\t")
+      fwrite(data[, .SD, .SDcols = replace(grepl("cluster$", names(data)), 1:nb_col_before, T)], file.path(path, "cluster.csv"), sep = "\t")
 
       pca_save(list_ana$pca$pca, input$num_PCA, path)
       plot_list_save(list_ana$tsne, path)
@@ -499,6 +529,4 @@ function(input, output, session) {
       zip(file, path, flags = "-jr9Xm")
     }
   )
-
-
 }
