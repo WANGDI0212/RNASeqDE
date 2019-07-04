@@ -381,7 +381,7 @@ function(input, output, session) {
       ana_object$tsne <- tsne_analysis(data = mat_res(), tsne = ana_object$tsne$tsne, epsilon = input$num_SNE_EPSILON, minpts = input$num_SNE_MIN)
 
       output$plot_tSNE <- renderPlot(ana_object$tsne$tsne_plot)
-      output$txt_tSNE <- renderText(print_dbscan(ana_object$tsne$scan))
+      output$txt_tSNE <- renderText(print_dbscan(ana_object$tsne$dbscan))
     } else {
       ana_object$tsne <- NULL
     }
@@ -503,7 +503,7 @@ function(input, output, session) {
       nb_col_before = ncol(data)
       with(list_ana, {
         suppressWarnings(data[, ':='(som_nb_neuron_cluster = som$pred,
-                  tsne_cluster = tsne$scan$cluster,
+                  tsne_cluster = tsne$dbscan$cluster,
                   dbscan_cluster = dbscan$cluster,
                   outliers_pca = pca$result,
                   outliers_tsne = if (is.null(tsne)) NULL else tsne$scan$cluster == 0,

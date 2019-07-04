@@ -102,7 +102,7 @@ tsne_analysis <- function(data, tsne = NULL, scan = NULL, epsilon = 0, minpts = 
     ggtitle("tSNE") + xlab("axis 1") + ylab("axis 2") +
     theme_gray()
 
-  return(list(tsne = tsne, scan = scan, tsne_plot = plot))
+  return(list(tsne = tsne, dbscan = scan, tsne_plot = plot))
 }
 
 
