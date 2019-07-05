@@ -17,63 +17,19 @@ function(input, output, session) {
   inv <- reactiveVal()
   param <- reactiveValues()
 
-  # import the dataset we will use for the rest
-  observeEvent(ignoreInit = T, {
-    input$file_DATASET
-    input$num_skip_line
-    input$rad_decimal
-  }, {
-    # file importation
-    if (!is.null(input$file_DATASET)) {
-      tmp <- suppressWarnings(fread(
-        file = input$file_DATASET$datapath,
-        skip = ifelse(is.na(input$num_skip_line) || input$num_skip_line == 0, "__auto__", input$num_skip_line),
-        data.table = T,
-        dec = input$rad_decimal,
-        fill = T,
-        blank.lines.skip = T
-      ))
-
-      inv(tmp)
-
-      # show the box
-      showElement("box_DATASET")
-      showElement("box_PARAM")
-      showElement("but_DATASET")
-      showElement("down_PARAM")
-
-
-
-      # show the content of the table
-      output$table_DATASET <- renderRHandsontable({
-        rhandsontable(head(tmp, n = 50), stretchH = "all", height = 250, readOnly = T) %>% hot_cols(fixedColumnsLeft = 1)
-      })
-      output$txt_COLNAMES <- renderText(paste(colnames(tmp)[-1], collapse = ", "))
-
-      param$groups <- matrix(rep("un", ncol(tmp) - 1),
-        nrow = 1,
-        dimnames = list(NULL, names(tmp)[-1])
-      )
-      param$conditions <- matrix(rep(paste0("cond", 1:4), each = (ncol(tmp) - 1) / 4, length.out = ncol(tmp) - 1),
-        nrow = 1,
-        dimnames = list(NULL, names(tmp)[-1])
-      )
-
-
-      # For the contrast table
-      condition <- unique(as.vector(param$conditions))
-      DT <- diag(nrow = length(condition) - 1, ncol = length(condition))
-      DT[row(DT) == col(DT) - 1] <- -1
-
-      colnames(DT) <- condition
-      DT <- data.table(
-        comparison_names = rev(rev(paste(condition, shift(condition, -1), sep = "_VS_"))[-1]),
-        DT
-      )
-
-      param$contrast <- DT
-    }
+  observeEvent(input$'comptage_table-table-file', {
+    # show the box
+    showElement("box_DATASET")
+    showElement("box_PARAM")
+    showElement("but_DATASET")
+    showElement("down_PARAM")
   })
+
+
+  # import the dataset we will use for the rest
+  param = callModule(AfterDataset, "comptage_table", inv)
+
+  print(param)
 
 
   # import the hypothetic parameters files

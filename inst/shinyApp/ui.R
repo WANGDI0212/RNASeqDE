@@ -21,21 +21,12 @@ dashboardPagePlus(
           box(
             width = 2, # box with the file input
             title = "Comptage Table",
-            fileInput("file_DATASET", "Select data file", accept = c(
-              "text/csv",
-              "text/comma-separated-values,text/plain",
-              ".csv"
-            )),
-            numericInput("num_skip_line", "Skip lines", value = 0, min = 0),
-            radioButtons("rad_decimal", "Decimal:", choices = c(
-              Dot = ".",
-              Comma = ","
-            ))
+            TableInput("comptage_table")
           ),
           box(
             width = 2, # box for the parameters files
             title = "parameters files",
-            fileInput("file_PARAM", "Select parameters file", accept = c("application/json"))
+            FileInput("param_in", "Select parameters file", accept = c("application/json"))
           ),
 
           #
@@ -48,20 +39,8 @@ dashboardPagePlus(
             width = 12,
             id = "box_PARAM", title = "Parameters",
 
-            h3("Names columns"), textOutput("txt_COLNAMES"), hr(),
-            # table Group
-            h3("Groups"),
-            rHandsontableOutput("table_GRP"),
-            tableOutput("txt_GRP"),
-            hr(),
-            # table condtitions
-            h3("Conditions"),
-            rHandsontableOutput("table_COND"),
-            tableOutput("txt_COND"),
-            hr(),
-            # table contrast
-            h3("contrast"),
-            rHandsontableOutput("table_CONTRAST")
+            boxParameters("parameters")
+
           )),
           column(3, offset = 9, hidden(
             downloadButton("down_PARAM", "Download the parameters"),
