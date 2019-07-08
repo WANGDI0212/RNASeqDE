@@ -357,7 +357,7 @@ function(input, output, session) {
     toggleElement("box_PCA", condition = "PCA" %in% input$chkgrp_TOOLS)
 
     if ("PCA" %in% input$chkgrp_TOOLS) {
-      ana_object$pca <- pca_analysis(mat_res(), pca = ana_object$pca$pca, radius = input$num_PCA)
+      ana_object$pca <- pca_analysis(mat_res(), pca = ana_object$pca$pca, radius = input$num_PCA_sphere_radius)
 
       # the plot
       output$plot_PCA <- renderPlot(plot_grid(ana_object$pca$corcircle, ana_object$pca$axis, nrow = 1))
@@ -378,7 +378,7 @@ function(input, output, session) {
     toggleElement("box_tSNE", condition = "tSNE" %in% input$chkgrp_TOOLS)
 
     if ("tSNE" %in% input$chkgrp_TOOLS) {
-      ana_object$tsne <- tsne_analysis(data = mat_res(), tsne = ana_object$tsne$tsne, epsilon = input$num_SNE_EPSILON, minpts = input$num_SNE_MIN)
+      ana_object$tsne <- tsne_analysis(data = mat_res(), tsne = ana_object$tsne$tsne, epsilon = input$num_tSNE_EPSILON, minpts = input$num_tSNE_MIN)
 
       output$plot_tSNE <- renderPlot(ana_object$tsne$tsne_plot)
       output$txt_tSNE <- renderText(print_dbscan(ana_object$tsne$dbscan))
@@ -498,8 +498,17 @@ function(input, output, session) {
       list_ana <- reactiveValuesToList(ana_object)
       path <- file.path(tempdir(), "analysis")
       dir.create(path, showWarnings = F, recursive = T)
-      data = as.data.table(mat_res(), keep.rownames = T)
 
+      # take the parameters who are in the input for the analysis
+      inputlist = reactiveValuesToList(input)
+      inputlist = inputlist[-grep("-selectized$", names(inputlist))]
+      inputlist = inputlist[grep("(PCA)|(SOM)|(ISOFOR)|(tSNE)|(DBSCAN)|(ABOD)", names(inputlist))]
+      strsplit(names(inputlist), "_")
+      name = sapply(strsplit(names(inputlist), "_"), function(x) paste(x[-1], collapse = " "))
+      write(paste(name, ":", inputlist), file = file.path(path, "input_analysis.txt"))
+
+      # the data from the analysis
+      data = as.data.table(mat_res(), keep.rownames = T)
       nb_col_before = ncol(data)
       with(list_ana, {
         suppressWarnings(data[, ':='(som_nb_neuron_cluster = som$pred,
@@ -516,12 +525,16 @@ function(input, output, session) {
 
 
 
-
+      # the score of the outliers methods
       data[, outliers_method := rowSums(.SD) / ncol(.SD), .SDcols = replace(grepl("^outliers", names(data)), 1:nb_col_before, F)]
 
-      fwrite( data[outliers_method != 0, .SD, .SDcols = replace(grepl("^outliers", names(data)), 1:nb_col_before, T)], file.path(path, "outliers.csv"), sep = "\t")
+      # replace the space by _ in all the column names (for excel)
+      setnames(data, names(data), gsub(" ", "_", names(data)))
+
+      fwrite(data[outliers_method != 0, .SD, .SDcols = replace(grepl("^outliers", names(data)), 1:nb_col_before, T)], file.path(path, "outliers.csv"), sep = "\t")
       fwrite(data[, .SD, .SDcols = replace(grepl("cluster$", names(data)), 1:nb_col_before, T)], file.path(path, "cluster.csv"), sep = "\t")
 
+      # save all the plot in the file
       pca_save(list_ana$pca$pca, input$num_PCA, path)
       plot_list_save(list_ana$tsne, path)
       plot_list_save(list_ana$som, path)

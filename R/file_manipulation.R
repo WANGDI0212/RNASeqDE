@@ -29,10 +29,8 @@ read_parameter_file <- function(name_file) {
 #' @importFrom jsonlite write_json
 #'
 #' @examples
-write_parameter_file = function(param, name_file){
-
+write_parameter_file <- function(param, name_file) {
   write_json(param, name_file, dataframe = "columns", pretty = T)
-
 }
 
 
@@ -47,14 +45,15 @@ write_parameter_file = function(param, name_file){
 #'
 #' @importFrom ggplot2 ggsave is.ggplot
 #'
-plot_list_save = function(plot_list, path){
-
-  if (is.null(plot_list)) return(invisible())
-  if (missing(path)) path = tempdir()
+plot_list_save <- function(plot_list, path) {
+  if (is.null(plot_list)) {
+    return(invisible())
+  }
+  if (missing(path)) path <- tempdir()
 
   dir.create(path, showWarnings = F, recursive = T)
-  for (i in seq_along(plot_list)){
-    if( is.ggplot(plot_list[[i]]) ){
+  for (i in seq_along(plot_list)) {
+    if (is.ggplot(plot_list[[i]])) {
       ggsave(paste0(names(plot_list)[i], ".png"), plot_list[[i]], path = path)
     }
   }
@@ -73,15 +72,16 @@ plot_list_save = function(plot_list, path){
 #' @export
 #'
 #' @importFrom ggplot2 ggsave
-pca_save = function(pca = NULL, radius = 0, path){
-
-  if (is.null(pca)) return(NULL)
+pca_save <- function(pca = NULL, radius = 0, path) {
+  if (is.null(pca)) {
+    return(NULL)
+  }
   dir.create(path, showWarnings = F, recursive = T)
 
-  combi = combn(1:pca$nf, 2)
-  sapply(1:ncol(combi), function(x){
-    title_partial = paste(combi[1, x], combi[2, x], sep = "_")
-    tmp = pca_analysis(pca$tab, pca, combi[1, x], combi[2, x], radius)
+  combi <- combn(1:pca$nf, 2)
+  sapply(1:ncol(combi), function(x) {
+    title_partial <- paste(combi[1, x], combi[2, x], sep = "_")
+    tmp <- pca_analysis(pca$tab, pca, combi[1, x], combi[2, x], radius)
     ggsave(paste0("pca_corcircle_axis_", title_partial, ".png"), tmp$corcircle, path = path)
     ggsave(paste0("pca_axis_", title_partial, ".png"), tmp$axis, path = path)
 
@@ -90,6 +90,3 @@ pca_save = function(pca = NULL, radius = 0, path){
 
   return(pca_analysis(pca$tab, pca, radius = radius)$result)
 }
-
-
-

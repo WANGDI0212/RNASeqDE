@@ -125,7 +125,7 @@ dashboardPagePlus(
             textOutput("txt_PCA"),
             plotOutput("plot_PCA"),
             column(12, align="left", style = "display: flex;flex-direction: row;align-items: center;",
-              div(style="width: 50%", numericInput("num_PCA", "sphere radius", value = 2, min = 0, step = 0.1)),
+              div(style="width: 50%", numericInput("num_PCA_sphere_radius", "sphere radius", value = 2, min = 0, step = 0.1)),
               div(style = "width: 49%; text-align: center", textOutput("txt_PCA_out"))
             )
           )),
@@ -134,8 +134,8 @@ dashboardPagePlus(
           hidden(boxWithId(
             id = "box_tSNE", title = "tSNE", width = 6,
             h4("DBSCAN"),
-            column(3, numericInput("num_SNE_EPSILON", "Epsillon", 0.5, min = 0, step = 0.1)),
-            column(9, sliderInput("num_SNE_MIN", "MinPts", min = 1, max = 20, step = 1, value = 5)),
+            column(3, numericInput("num_tSNE_EPSILON", "Epsillon", 0.5, min = 0, step = 0.1)),
+            column(9, sliderInput("num_tSNE_MIN", "MinPts", min = 1, max = 20, step = 1, value = 5)),
             br(),
             column(12, plotOutput("plot_tSNE")),
             verbatimTextOutput("txt_tSNE")

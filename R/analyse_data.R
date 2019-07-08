@@ -207,7 +207,6 @@ isofor_analysis <- function(data, isofor = NULL, nTrees = 100, phi = 8) {
 #'
 #' @examples
 som_analysis <- function(data, som = NULL) {
-
   if (is.null(som)) {
     som <- somgrid(xdim = 10, ydim = 10, topo = "hexagonal", neighbourhood.fct = "gaussian")
     som <- som(data, grid = som, rlen = 200)
@@ -248,9 +247,9 @@ som_analysis <- function(data, som = NULL) {
     ggtitle("Neighbour distance plot"))
 
 
-  codes = as.data.table(getCodes(som_model), keep.rownames = T)
+  codes <- as.data.table(getCodes(som), keep.rownames = T)
   codes[, rn := gsub("V", "", rn)]
-  codes = melt(codes, id.vars = 1)
+  codes <- melt(codes, id.vars = 1)
 
   codes_g <- ggplot(codes, aes(x = "", y = value, group = variable, color = variable, fill = variable)) +
     geom_col(width = 1) +
