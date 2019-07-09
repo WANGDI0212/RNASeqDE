@@ -28,7 +28,8 @@ Imports:
 	shinydashboard,
 	shinyalert,
 	shinyFeedback,
-	shiny
+	shiny,
+	purrr
 Depends: 
 	R(>= 3.0),
 	edgeR,

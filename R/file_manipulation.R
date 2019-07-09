@@ -44,6 +44,7 @@ write_parameter_file <- function(param, name_file) {
 #' @export
 #'
 #' @importFrom ggplot2 ggsave is.ggplot
+#' @importFrom purrr pwalk
 #'
 plot_list_save <- function(plot_list, path) {
   if (is.null(plot_list)) {
@@ -52,11 +53,11 @@ plot_list_save <- function(plot_list, path) {
   if (missing(path)) path <- tempdir()
 
   dir.create(path, showWarnings = F, recursive = T)
-  for (i in seq_along(plot_list)) {
-    if (is.ggplot(plot_list[[i]])) {
-      ggsave(paste0(names(plot_list)[i], ".png"), plot_list[[i]], path = path)
-    }
-  }
+
+  plot_list = Filter(is.ggplot, plot_list)
+  names_plot = paste0(names(plot_list), ".png")
+  pwalk(list(filename = names_plot, plot = plot_list), ggsave, path = path)
+
   invisible()
 }
 

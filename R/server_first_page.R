@@ -78,7 +78,6 @@ AfterDataset <- function(input, output, session, data) {
     }
   })
 
-  observe(print(param$groups))
   return(param)
 }
 
@@ -95,7 +94,7 @@ AfterDataset <- function(input, output, session, data) {
 
 parameterBox_server <- function(input, output, session, columns, param) {
 
-  # output$colnames <- renderText(paste(columns()[-1], collapse = ", "))
+  output$colnames <- renderText(paste(columns()[-1], collapse = ", "))
 
 
   # take the input paramters in the group table
@@ -203,7 +202,7 @@ parameterBox_server <- function(input, output, session, columns, param) {
 
 
 
-parametersInput_serveur <- function(input, output, session, colname, param) {
+parametersInput_server <- function(input, output, session, colname, param) {
   userFile <- reactive({
     # If no file is selected, don't do anything
     validate(need(input$file, message = FALSE))

@@ -1,6 +1,6 @@
 dashboardPagePlus(
-  dashboardHeaderPlus(title = "RNA-seq DE"),
-  dashboardSidebar(
+  header = dashboardHeaderPlus(title = "RNA-seq DE"), title = "RNAseqDE",
+  sidebar = dashboardSidebar(
     sidebarMenu(
       id = "mnu_MENU",
       menuItem("Load dataset and parameters", tabName = "tab_LOAD", icon = icon("database")),
@@ -8,7 +8,7 @@ dashboardPagePlus(
       menuItem("Analysis", tabName = "tab_ANA", icon = icon("analytics"))
     )
   ),
-  dashboardBody(
+  body = dashboardBody(
     useShinyalert(),
     useShinyFeedback(),
     useShinyjs(),
@@ -57,21 +57,9 @@ dashboardPagePlus(
       tabItem(
         "tab_RES",
         fluidRow(
-          box(
-            width = 12, title = "Normalizations",
-            plotOutput("plot_NORM")
-          ),
-          box(
-            width = 12, title = "Comparisons",
-            column(6, selectInput("sel_COMP", "select the comparison you want", choices = NULL)),
-            column(6, numericInput("num_Pvalue", "Pvalue adjusted", min = 0, max = 1, value = 1)),
-            column(12, plotOutput("plot_COMP")),
-            column(12, tableOutput("tab_COMP"))
-          ),
-          box(
-            title = "heatmaps", width = 12,
-            plotOutput("plot_HEATMAP")
-          ),
+          box_PlotOutput_ui("normalization", "Normalizations"),
+          comparison_BoxOutput_ui("comparison", "Comparisons"),
+          box_PlotOutput_ui("heatmap", "Heatmaps"),
           column(3,
             offset = 9,
             downloadButton("down_RESULT"),

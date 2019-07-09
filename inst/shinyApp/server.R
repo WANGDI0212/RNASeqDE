@@ -30,10 +30,7 @@ function(input, output, session) {
   })
 
 
-  observe(print(names(inv())))
-
-
-  param = callModule(parametersInput_serveur, "param_in", reactive(colnames(inv())), param)
+  param = callModule(parametersInput_server, "param_in", reactive(colnames(inv())), param)
   param = callModule(parameterBox_server, "parameters", reactive(colnames(inv())), param)
 
 
@@ -52,8 +49,8 @@ function(input, output, session) {
   # Result ------------------------------------------------------------------
 
   plot_list <- reactiveValues()
+  data_comp <- reactiveVal()
 
-  data_comp <- 0
   observeEvent(input$but_DATASET, {
 
     # Before the calculation
@@ -78,7 +75,7 @@ function(input, output, session) {
       fit <- DE(y, conditions)
 
       incProgress(1 / 4, detail = "Do the comparison")
-      data_comp <<- comparison(fit, contrast)
+      data_comp(comparison(fit, contrast))
 
       setProgress(1, detail = "End of the calculation")
     })
@@ -91,66 +88,18 @@ function(input, output, session) {
     plot_list$normalization <- plot_normalization$normalize
 
     # The plot on the normalisation
-    output$plot_NORM <- renderPlot(plot_grid(plot_list$normalization_raw, plot_list$normalization, nrow = 1, align = "v"))
+    callModule(twoPlot_server, "normalization", reactive(plot_list$normalization_raw), reactive(plot_list$normalization))
 
     # update the input from the data we have
-    updateSelectInput(session, "sel_COMP", choices = data_comp[, unique(comp_name)], selected = data_comp[, unique(comp_name)][1])
-    updateSliderInput(session, "num_Pvalue", value = 0.05, min = 0, max = round(data_comp[, max(pval_adj)]), step = 0.001)
+    updateSelectInput(session, "comparison-comparison", choices = data_comp()[, unique(comp_name)], selected = data_comp()[, unique(comp_name)][1])
+    updateSliderInput(session, "comparison-pvalue", value = 0.05, min = 0, max = round(data_comp()[, max(pval_adj)]), step = 0.001)
   })
 
 
+  plot_list = callModule(comparison_box_server, "comparison", data_comp, plot_list)
+  callModule(twoPlot_server, "comparison", reactive(plot_list$Smear_plot), reactive(plot_list$volcano_plot))
+  callModule(twoPlot_server, "heatmap", reactive(plot_list$heatmap_non_contrast), reactive(plot_list$heatmap_contrast))
 
-  observeEvent(input$num_Pvalue, {
-    # update the table with the Pvalue you want
-    output$tab_COMP <- renderTable({
-      data_comp[pval_adj <= input$num_Pvalue, .(total = .N, up = sum(logFC > 0), down = sum(logFC < 0)), by = comp_name ]
-    })
-
-
-    # update the heatmap
-    # keep the rows that have at least one of the Pvalue is down to the Pvalue they want
-    keep.row <- data_comp[, sum(pval_adj <= input$num_Pvalue) >= 1, by = rn][(V1)]
-    if (nrow(keep.row) >= 1) {
-      plot_list$heatmap_non_contrast <- heatmap_ggplot(data_comp[
-        keep.row,
-        on = "rn"
-      ], "heatmap non contrasted")
-
-      plot_list$heatmap_contrast <- heatmap_ggplot(
-        data_comp[pval_adj <= input$num_Pvalue],
-        "heatmap contrasted"
-      )
-    }
-    output$plot_HEATMAP <- renderPlot(plot_grid(plot_list$heatmap_non_contrast, plot_list$heatmap_contrast, nrow = 1, align = "v"))
-  }, ignoreInit = T)
-
-
-
-
-  # update the graph of the comparison
-  observeEvent({
-    input$sel_COMP
-    input$num_Pvalue
-  }, {
-
-    # to avoid rewrite the same lines over and over
-    name_legend <- paste("adj PValue <=", input$num_Pvalue)
-    gg_begin <- ggplot(data_comp[comp_name == input$sel_COMP], aes(
-      col = as.character(pval_adj < input$num_Pvalue),
-      shape = as.character(pval_adj < input$num_Pvalue)
-    )) +
-      ggtitle(input$sel_COMP) +
-      scale_color_manual(name = "Outliers", values = color_true_false) +
-      scale_shape_manual(name = "Outliers", values = shape_true_false) + theme_gray()
-
-
-    output$plot_COMP <- suppressMessages(renderPlot({
-      a <- gg_begin + geom_point(aes(x = AveLogCPM, y = logFC)) + geom_smooth(aes(x = AveLogCPM, y = logFC))
-      b <- gg_begin + geom_point(aes(x = logFC, y = -log10(pval_adj))) + ylab("-log10(adj PValue)")
-
-      plot_grid(a, b, nrow = 1, align = "v")
-    }))
-  }, ignoreInit = T)
 
 
 
@@ -161,9 +110,9 @@ function(input, output, session) {
       showNotification("In prepartion for the download")
       path <- file.path(tempdir(), "result")
       plot_list_save(reactiveValuesToList(plot_list), path)
-      fwrite(data_comp, file.path(path, "comparison.csv"), sep = "\t")
+      fwrite(data_comp(), file.path(path, "comparison.csv"), sep = "\t")
 
-      sapply(split(data_comp, by = "comp_name"), function(subdata) {
+      sapply(split(data_comp(), by = "comp_name"), function(subdata) {
         title <- subdata[, unique(comp_name)]
 
         gg_begin <- ggplot(subdata, aes(col = pval_adj < input$num_Pvalue, shape = pval_adj < input$num_Pvalue)) +
@@ -195,7 +144,7 @@ function(input, output, session) {
   }, {
     showMenuItem("tab_ANA")
 
-    mat_res(as.matrix(dcast(data_comp[pval_adj <= input$num_Pvalue], rn ~ comp_name, value.var = "logFC", fill = 0), rownames = "rn"))
+    mat_res(as.matrix(dcast(data_comp()[pval_adj <= input$num_Pvalue], rn ~ comp_name, value.var = "logFC", fill = 0), rownames = "rn"))
 
     updateTabItems(session, "mnu_MENU", "tab_ANA")
   }, ignoreInit = T)
