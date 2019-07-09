@@ -14,121 +14,28 @@ function(input, output, session) {
 
   # load dataset ------------------------------------------------------------
 
-  inv <- reactiveVal()
-  param <- reactiveValues()
 
-  observeEvent(input$'comptage_table-table-file', {
+
+  # import the dataset we will use for the rest
+  inv = callModule(csvFile, "comptage_table")
+  param = callModule(AfterDataset, "comptage_table", inv)
+
+  observeEvent(input$"comptage_table-file", {
     # show the box
     showElement("box_DATASET")
     showElement("box_PARAM")
     showElement("but_DATASET")
     showElement("down_PARAM")
+
   })
 
 
-  # import the dataset we will use for the rest
-  param = callModule(AfterDataset, "comptage_table", inv)
-
-  print(param)
+  observe(print(names(inv())))
 
 
-  # import the hypothetic parameters files
-  observeEvent(input$file_PARAM, {
+  param = callModule(parametersInput_serveur, "param_in", reactive(colnames(inv())), param)
+  param = callModule(parameterBox_server, "parameters", reactive(colnames(inv())), param)
 
-    # read the json parameters
-    tmp <- read_parameter_file(input$file_PARAM$datapath)
-
-    param$groups <- matrix(tmp$groups, nrow = 1, dimnames = list(NULL, names(inv())[-1]))
-    param$conditions <- matrix(tmp$conditions, nrow = 1, dimnames = list(NULL, names(inv())[-1]))
-
-    param$contrast <- tmp$contrast
-  })
-
-  # take the input paramters in the group table
-  observe({
-    if (!is.null(input$table_GRP)) {
-      param$groups <- hot_to_r(input$table_GRP)
-    }
-  })
-
-  # take the input paramters in the condition table
-  observe({
-    if (!is.null(input$table_COND)) {
-      param$conditions <- hot_to_r(input$table_COND)
-    }
-  })
-
-  # if there is a change in the conditions parameters take it to the contrast table
-  observeEvent(param$conditions, {
-    tmp <- copy(param$contrast) # the copy is important
-
-    # create new column if necessary
-    modified <- F
-    diff <- setdiff(as.vector(param$conditions)[-1], names(param$contrast))
-    if (length(diff) != 0) {
-      tmp[, (diff) := 0]
-      modified <- T
-    }
-
-    # delete some column if nessary
-    diff <- setdiff(names(param$contrast)[-1], as.vector(param$conditions))
-    if (length(diff) != 0) {
-      tmp[, (diff) := NULL]
-      modified <- T
-    }
-
-    # if the contrast table had been modified reorder the column and update the contrast table
-    if (modified) {
-      setcolorder(tmp, c("comparison_names", unique(as.vector(param$conditions))))
-      param$contrast <- tmp
-    }
-  })
-
-  # Take the contrast and if there is one suppelementary line take it and replace it by another line filled by 0 and with a random name
-  observe({
-    if (!is.null(input$table_CONTRAST)) {
-      tmp <- hot_to_r(input$table_CONTRAST)
-
-      added_row <- unique(which(is.na(tmp), arr.ind = T)[, "row"])
-      if (length(added_row) != 0) {
-        set(tmp, added_row, 2:ncol(tmp), 0)
-        set(tmp, added_row, 1L, basename(tempfile("comp_")))
-      }
-      param$contrast <- tmp
-    }
-  })
-
-
-  # the tables
-  output$table_GRP <- renderRHandsontable({
-    rhandsontable(param$groups, stretchH = "all") %>%
-      hot_context_menu(allowRowEdit = F, allowColEdit = F)
-  })
-
-  output$table_COND <- renderRHandsontable({
-    rhandsontable(param$conditions, stretchH = "all") %>%
-      hot_context_menu(allowRowEdit = F, allowColEdit = F)
-  })
-
-  output$table_CONTRAST <- renderRHandsontable({
-    rhandsontable(param$contrast, stretchH = "all") %>%
-      hot_validate_numeric(cols = 2:ncol(param$contrast)) %>%
-      hot_cols(renderer = "
-               function (instance, td, row, col, prop, value, cellProperties) {
-               Handsontable.renderers.NumericRenderer.apply(this, arguments);
-               if (value < 0) {
-               td.style.background = 'lightblue';
-               } else if (value > 0) {
-               td.style.background = 'Salmon';
-               }
-               }")
-  })
-
-  # to the table functions
-  observe({
-    output$txt_GRP <- renderTable(table(param$groups))
-    output$txt_COND <- renderTable(table(param$conditions))
-  })
 
 
   output$down_PARAM <- downloadHandler(

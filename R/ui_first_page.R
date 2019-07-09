@@ -2,7 +2,7 @@ TableInput <- function(id) {
   ns <- NS(id)
 
   tagList(
-    FileInput(ns("table"), label = "Select data file", accept = c(
+    fileInput(ns("file"), label = "Select data file", accept = c(
       "text/csv",
       "text/comma-separated-values,text/plain",
       ".csv"

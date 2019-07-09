@@ -33,7 +33,7 @@ dashboardPagePlus(
           hidden(boxWithId(
             width = 8,
             id = "box_DATASET", title = "Extract of the dataset",
-            rHandsontableOutput("table_DATASET")
+            rHandsontableOutput("comptage_table-table_DATASET")
           )),
           hidden(boxWithId(
             width = 12,
