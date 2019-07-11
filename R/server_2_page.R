@@ -39,15 +39,17 @@ comparison_box_server <- function(input, output, session, data, plot_list) {
     input$pvalue
     }, {
 
+      is_inferior = data()[comp_name == input$comparison, as.character(pval_adj < input$pvalue)]
+
       # to avoid rewrite the same lines over and over
       name_legend <- paste("adj PValue <=", input$pvalue)
       gg_begin <- ggplot(data()[comp_name == input$comparison], aes(
-        col = as.character(pval_adj < input$pvalue),
-        shape = as.character(pval_adj < input$pvalue)
+        col = is_inferior,
+        shape = is_inferior
       )) +
-        ggtitle(input$comparison) +
-        scale_color_manual(name = "Outliers", values = color_true_false) +
-        scale_shape_manual(name = "Outliers", values = shape_true_false) + theme_gray()
+        labs(shape=name_legend, colour=name_legend, title = input$comparison) +
+        scale_color_manual(values = color_true_false) +
+        scale_shape_manual(values = shape_true_false) + theme_gray()
 
       plot_list$Smear_plot <- gg_begin + geom_point(aes(x = AveLogCPM, y = logFC)) + geom_smooth(aes(x = AveLogCPM, y = logFC))
       plot_list$volcano_plot <- gg_begin + geom_point(aes(x = logFC, y = -log10(pval_adj))) + ylab("-log10(adj PValue)")

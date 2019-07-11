@@ -9,7 +9,8 @@ library(shinyalert)
 library(shinyFeedback)
 library(shiny)
 library(shinyWidgets)
-
+library(purrr)
+library(tibble)
 
 
 

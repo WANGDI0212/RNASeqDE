@@ -22,10 +22,11 @@ function(input, output, session) {
 
   observeEvent(input$"comptage_table-file", {
     # show the box
-    showElement("box_DATASET")
-    showElement("box_PARAM")
-    showElement("but_DATASET")
-    showElement("down_PARAM")
+    c("box_DATASET",
+      "box_PARAM",
+      "but_DATASET",
+      "down_PARAM",
+      "down_PARAM_bttn") %>% walk(showElement)
 
   })
 
@@ -109,19 +110,34 @@ function(input, output, session) {
     content = function(file) {
       showNotification("In prepartion for the download")
       path <- file.path(tempdir(), "result")
-      plot_list_save(reactiveValuesToList(plot_list), path)
+      dir.create(path, showWarnings = F, recursive = T)
+      # write the file with all the data
       fwrite(data_comp(), file.path(path, "comparison.csv"), sep = "\t")
 
+      # take all the plot
+      list_plot = reactiveValuesToList(plot_list)
+
+      # remove the plot we will create non the less
+      list_plot$Smear_plot = NULL
+      list_plot$volcano_plot = NULL
+
+      # save the other plot
+      plot_list_save(list_plot, path)
+
+      # save all the plot for each comparison
       sapply(split(data_comp(), by = "comp_name"), function(subdata) {
         title <- subdata[, unique(comp_name)]
 
-        gg_begin <- ggplot(subdata, aes(col = pval_adj < input$num_Pvalue, shape = pval_adj < input$num_Pvalue)) +
-          ggtitle(title) +
-          scale_color_manual(name = paste("adj PValue <", input$num_Pvalue), values = c("blue", "red")) +
-          scale_shape_manual(name = paste("adj PValue <", input$num_Pvalue), values = c(16, 3))
+        is_inferior = subdata[, as.character(pval_adj < input$"comparison-pvalue")]
 
-        ggsave(paste0(title, ".png"), gg_begin + geom_point(aes(x = AveLogCPM, y = logFC)), path = path)
-        ggsave(paste0(title, "_volvcano.png"), gg_begin + geom_point(aes(x = logFC, y = -log10(pval_adj))) + ylab("-log10(adj PValue)"), path = path)
+        name_legend <- paste("adj PValue <=", input$"comparison-pvalue")
+        gg_begin <- ggplot(subdata, aes(col = is_inferior, shape = is_inferior)) +
+          labs(shape=name_legend, colour=name_legend, title = title) +
+          scale_color_manual(values = color_true_false) +
+          scale_shape_manual(values = shape_true_false) + theme_gray()
+
+        ggsave(paste0(title, "_Smear.svg"), gg_begin + geom_point(aes(x = AveLogCPM, y = logFC)) + geom_smooth(aes(x = AveLogCPM, y = logFC)), path = path)
+        ggsave(paste0(title, "_volcano.svg"), gg_begin + geom_point(aes(x = logFC, y = -log10(pval_adj))) + ylab("-log10(adj PValue)"), path = path)
       }, simplify = F)
 
       zip(file, path, flags = "-jr9Xm")
@@ -136,15 +152,16 @@ function(input, output, session) {
 
   # the matrix of the result
   mat_res <- reactiveVal()
+
   observeEvent({
     input$but_RES
     if (input$but_RES >= 1) {
-      input$num_Pvalue
+      input$"comparison-pvalue"
     }
   }, {
     showMenuItem("tab_ANA")
 
-    mat_res(as.matrix(dcast(data_comp()[pval_adj <= input$num_Pvalue], rn ~ comp_name, value.var = "logFC", fill = 0), rownames = "rn"))
+    mat_res(as.matrix(dcast(data_comp()[pval_adj <= input$"comparison-pvalue"], rn ~ comp_name, value.var = "logFC", fill = 0), rownames = "rn"))
 
     updateTabItems(session, "mnu_MENU", "tab_ANA")
   }, ignoreInit = T)
@@ -159,14 +176,29 @@ function(input, output, session) {
   # the object of the analysis
   ana_object <- reactiveValues()
 
-  observeEvent(input$chkgrp_TOOLS, toggleElement("down_ANA", condition = !is.null(input$chkgrp_TOOLS)), ignoreNULL = F)
+  observeEvent(input$chkgrp_TOOLS, {
+
+    # apperance of the download button if there is at least one selection in chkgrp tools
+    # the . is the element of the vector
+    c("down_ANA", "down_ANA_bttn") %>% walk(~ toggleElement(.), condition = !is.null(input$chkgrp_TOOLS))
+
+    tribble(
+      ~box,   ~id,
+      "box_PCA", "PCA",
+      "box_tSNE", "tSNE",
+      "box_SOM", "SOM",
+      "box_DBSCAN", "DBSCAN",
+      "box_ABOD", "ABOD",
+      "box_ISOFOR", "ISOFOR"
+    ) %>% pwalk( ~ toggleElement(.x, condition = .y %in% input$chkgrp_TOOLS) )
+
+  }, ignoreNULL = F)
 
   # PCA box
   observeEvent({
     input$chkgrp_TOOLS
     input$num_PCA
   }, {
-    toggleElement("box_PCA", condition = "PCA" %in% input$chkgrp_TOOLS)
 
     if ("PCA" %in% input$chkgrp_TOOLS) {
       ana_object$pca <- pca_analysis(mat_res(), pca = ana_object$pca$pca, radius = input$num_PCA_sphere_radius)
@@ -187,7 +219,6 @@ function(input, output, session) {
     input$num_SNE_EPSILON
     input$num_SNE_MIN
   }, {
-    toggleElement("box_tSNE", condition = "tSNE" %in% input$chkgrp_TOOLS)
 
     if ("tSNE" %in% input$chkgrp_TOOLS) {
       ana_object$tsne <- tsne_analysis(data = mat_res(), tsne = ana_object$tsne$tsne, epsilon = input$num_tSNE_EPSILON, minpts = input$num_tSNE_MIN)
@@ -207,7 +238,6 @@ function(input, output, session) {
     input$num_DBSCAN_EPSILON
     input$num_DBSCAN_MIN
   }, {
-    toggleElement("box_DBSCAN", condition = "DBSCAN" %in% input$chkgrp_TOOLS)
 
     if ("DBSCAN" %in% input$chkgrp_TOOLS) {
       ana_object$dbscan <- dbscan_analysis(mat_res(), ana_object$dbscan, epsilon = input$num_DBSCAN_EPSILON, minpts = input$num_DBSCAN_MIN)
@@ -224,7 +254,6 @@ function(input, output, session) {
     input$num_ABOD_KNN
     input$num_ABOD_QUANTILE
   }, {
-    toggleElement("box_ABOD", condition = "ABOD" %in% input$chkgrp_TOOLS)
 
     if ("ABOD" %in% input$chkgrp_TOOLS) {
       ana_object$abod <- abod_analysis(mat_res(), ana_object$abod, k = input$num_ABOD_KNN)
@@ -249,7 +278,6 @@ function(input, output, session) {
     input$sel_ISOFOR_ntree
     input$sli_ISOFOR_threshold
   }, {
-    toggleElement("box_ISOFOR", condition = "ISOFOR" %in% input$chkgrp_TOOLS)
 
     if ("ISOFOR" %in% input$chkgrp_TOOLS) {
       ana_object$isofor <- isofor_analysis(mat_res(), ana_object$isofor,
@@ -274,7 +302,6 @@ function(input, output, session) {
   observeEvent({
     input$chkgrp_TOOLS
   }, {
-    toggleElement("box_SOM", condition = "SOM" %in% input$chkgrp_TOOLS)
 
     if ("SOM" %in% input$chkgrp_TOOLS) {
       update <- is.null(ana_object$som)

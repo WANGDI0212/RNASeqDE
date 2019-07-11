@@ -30,7 +30,8 @@ Imports:
 	shinyFeedback,
 	shiny,
 	purrr,
-	svglite
+	svglite,
+	tibble
 Depends: 
 	R(>= 3.0),
 	edgeR,
@@ -38,4 +39,4 @@ Depends:
 RoxygenNote: 6.1.1
 Roxygen: list(markdown = TRUE)
 SystemRequirements:
-	libcairo2-dev
+	libcairo2-dev.

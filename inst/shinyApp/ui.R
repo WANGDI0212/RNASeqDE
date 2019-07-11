@@ -42,7 +42,7 @@ dashboardPagePlus(
             boxParameters("parameters")
           )),
           column(3, offset = 9, hidden(
-            downloadButton("down_PARAM", label = "Download the parameters", style = "simple", color = "primary"),
+            downloadBttn("down_PARAM", label = "Download the parameters", style = "bordered", color = "primary"),
             actionBttn("but_DATASET", "Continue", style = "simple", color = "primary")
           ))
         )
@@ -92,7 +92,7 @@ dashboardPagePlus(
           # SOM
           hidden(boxWithId(
             id = "box_SOM", title = "Self Organizing Map", width = 12,
-            box_som_ui("SOM")
+            box_som_ui("self_organizing_map")
           )),
 
           # DBSCAN
@@ -113,7 +113,7 @@ dashboardPagePlus(
             box_isofor_ui("isolation_forest")
           )),
 
-          downloadButton("down_ANA")
+          downloadBttn("down_ANA",  style = "bordered", color = "primary")
         )
       )
     )
