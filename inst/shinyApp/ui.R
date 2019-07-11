@@ -4,13 +4,13 @@ dashboardPagePlus(
     sidebarMenu(
       id = "mnu_MENU",
       menuItem("Load dataset and parameters", tabName = "tab_LOAD", icon = icon("database")),
-      menuItem("Result", tabName = "tab_RES", icon = icon("dragon")),
+      menuItem("Result", tabName = "tab_RES", icon = tags$i(class = "fas fa-dragon")),
       menuItem("Analysis", tabName = "tab_ANA", icon = icon("analytics"))
     )
   ),
   body = dashboardBody(
-    useShinyalert(),
-    useShinyFeedback(),
+    # useShinyalert(),
+    # useShinyFeedback(),
     useShinyjs(),
     tabItems(
 
@@ -40,15 +40,10 @@ dashboardPagePlus(
             id = "box_PARAM", title = "Parameters",
 
             boxParameters("parameters")
-
           )),
           column(3, offset = 9, hidden(
-            downloadButton("down_PARAM", "Download the parameters"),
-            actionButton("but_DATASET", "Continue"),
-            tags$style("#but_DATASET {
-                          background-color: #0080ff;
-                          color: white;
-                       }")
+            downloadButton("down_PARAM", label = "Download the parameters", style = "simple", color = "primary"),
+            actionBttn("but_DATASET", "Continue", style = "simple", color = "primary")
           ))
         )
       ),
@@ -62,12 +57,8 @@ dashboardPagePlus(
           box_PlotOutput_ui("heatmap", "Heatmaps"),
           column(3,
             offset = 9,
-            downloadButton("down_RESULT"),
-            actionButton("but_RES", "Continue"),
-            tags$style("#but_RES {
-                          background-color: #0080ff;
-                          color: white;
-                       }")
+            downloadBttn("down_RESULT", style = "bordered", color = "primary"),
+            actionBttn("but_RES", "Continue", style = "simple", color = "primary")
           )
         )
       ),
@@ -89,56 +80,37 @@ dashboardPagePlus(
           # PCA
           hidden(boxWithId(
             id = "box_PCA", title = "PCA", width = 6,
-            textOutput("txt_PCA"),
-            plotOutput("plot_PCA"),
-            column(12, align="left", style = "display: flex;flex-direction: row;align-items: center;",
-              div(style="width: 50%", numericInput("num_PCA_sphere_radius", "sphere radius", value = 2, min = 0, step = 0.1)),
-              div(style = "width: 49%; text-align: center", textOutput("txt_PCA_out"))
-            )
+            box_pca_ui("PCA")
           )),
 
           # tSNE
           hidden(boxWithId(
             id = "box_tSNE", title = "tSNE", width = 6,
-            h4("DBSCAN"),
-            column(3, numericInput("num_tSNE_EPSILON", "Epsillon", 0.5, min = 0, step = 0.1)),
-            column(9, sliderInput("num_tSNE_MIN", "MinPts", min = 1, max = 20, step = 1, value = 5)),
-            br(),
-            column(12, plotOutput("plot_tSNE")),
-            verbatimTextOutput("txt_tSNE")
+            box_tsne_ui("tSNE")
           )),
 
           # SOM
           hidden(boxWithId(
             id = "box_SOM", title = "Self Organizing Map", width = 12,
-            sliderInput("num_SOM_QUANTILE", "Anomaly Score Threshold", 0.95, min = 0, max = 1, step = 0.01),
-            textOutput("txt_SOM"),
-            column(12, plotOutput("plot_SOM", height = "1000px"))
+            box_som_ui("SOM")
           )),
 
           # DBSCAN
           hidden(boxWithId(
             id = "box_DBSCAN", title = "DBSCAN", width = 6,
-            column(3, numericInput("num_DBSCAN_EPSILON", "Epsillon", 0.5, min = 0, step = 0.1)),
-            column(9, sliderInput("num_DBSCAN_MIN", "MinPts", min = 1, max = 20, step = 1, value = 5)),
-            verbatimTextOutput("txt_DBSCAN")
+            box_dbscan_ui("DBSCAN")
           )),
 
           # ABOD
           hidden(boxWithId(
             id = "box_ABOD", title = "ABOD", width = 6,
-            column(6, sliderInput("num_ABOD_KNN", "Number of nearest neighbours", 20, min = 1, max = 40, step = 1)),
-            column(6, sliderInput("num_ABOD_QUANTILE", "Anomaly Score Threshold", 0.05, min = 0, max = 1, step = 0.01)),
-            verbatimTextOutput('txt_ABOD')
+            box_abod_ui("ABOD")
           )),
 
           # isolation forest
           hidden(boxWithId(
             id = "box_ISOFOR", title = "isolation forest", width = 6,
-            sliderInput("num_ISOFOR_threshold", "Anomaly Score Threshold", min = 0, max = 1, step = 0.01, value = 0.95),
-            column(6, selectInput("sel_ISOFOR_depth", "Tree Depth", choices = c(3,4,5,6,7,8), selected=5)),
-            column(6, selectInput("sel_ISOFOR_ntree", "Number of Trees", choices = c(10,20,50,100,200,500), selected = 50)),
-            verbatimTextOutput("txt_ISOFOR")
+            box_isofor_ui("isolation_forest")
           )),
 
           downloadButton("down_ANA")
