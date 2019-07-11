@@ -1,10 +1,13 @@
-box_PlotOutput_ui <- function(id, title) {
+box_PlotOutput_ui <- function(id, title = NULL) {
   ns <- NS(id)
 
-  box(
-    width = 12, title = title,
-    plotOutput(ns("plot"))
-  )
+  if (is.null(title))
+    box(
+      width = 12, title = title,
+      column(12, plotOutput(ns("plot")))
+    )
+  else
+    column(12, plotOutput(ns("plot")))
 }
 
 comparison_BoxOutput_ui <- function(id, title) {
