@@ -181,7 +181,7 @@ abod_analysis <- function(data, abod = NULL, k = 15) {
 #' @examples
 isofor_analysis <- function(data, isofor = NULL, nTrees = 100, phi = 8) {
   if (is.null(isofor) || any(c(nTrees, phi) != c(isofor$nTrees, isofor$phi))) {
-    isofor <- iForest(data, nTrees, phi)
+    isofor <- iForest(data, nTrees, 2^phi)
     isofor <- list(isofor = predict(isofor, data), nTrees = nTrees, phi = phi)
   }
 
