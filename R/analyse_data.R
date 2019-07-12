@@ -11,20 +11,16 @@
 #' @return
 #' @export
 #'
-#' @importFrom ade4 dudi.pca
 #' @importFrom ggforce geom_circle
 #' @importFrom ggplot2 ggplot geom_segment geom_label coord_fixed xlab ylab ggtitle theme_gray scale_color_manual scale_shape_manual qplot arrow
 #'
 #' @examples
 #' ""
-pca_analysis <- function(data, pca = NULL, axis1 = 1, axis2 = 2, radius = 0) {
-  if (is.null(pca)) {
-    pca <- dudi.pca(data, center = F, scale = F, scannf = F, nf = 5)
-  }
+pca_analysis <- function(pca, axis1 = 1, axis2 = 2, radius = 0) {
 
   # for the sphere
   sphere <- function(x, radius) {
-    center <- apply(x, 2, mean)
+    center <- colMeans(x)
 
     vec_dist <- rowSums(sweep(x, 2, center, "-")^2) >= radius^2
 
@@ -35,28 +31,29 @@ pca_analysis <- function(data, pca = NULL, axis1 = 1, axis2 = 2, radius = 0) {
 
   color_circle <- "firebrick"
 
-  corcircle <- ggplot(data = NULL, aes(x = pca$c1[, axis1], y = pca$c1[, axis2], label = rownames(pca$c1))) +
-    geom_vline(xintercept = 0, color = color_circle) + geom_hline(yintercept = 0, color = color_circle) +
-    geom_segment(aes(xend = 0, yend = 0), arrow = arrow(ends = "first", length = unit(0.25, "cm"))) +
-    geom_circle(aes(x0 = 0, y0 = 0, r = 1), inherit.aes = F, color = color_circle) +
-    geom_label(aes(vjust = ifelse(pca$c1[, axis2] < 0, "top", "bottom"))) +
-    coord_fixed() + labs(x = NULL, y = NULL, title = "corcircle", subtitle = title_axis) +
-    theme_gray()
+  with(pca, {
+    corcircle <- ggplot(data = NULL, aes(x = c1[, axis1], y = c1[, axis2], label = rownames(c1))) +
+      geom_vline(xintercept = 0, color = color_circle) + geom_hline(yintercept = 0, color = color_circle) +
+      geom_segment(aes(xend = 0, yend = 0), arrow = arrow(ends = "first", length = unit(0.25, "cm"))) +
+      geom_circle(aes(x0 = 0, y0 = 0, r = 1), inherit.aes = F, color = color_circle) +
+      geom_label(aes(vjust = ifelse(c1[, axis2] < 0, "top", "bottom"))) +
+      coord_fixed() + labs(x = NULL, y = NULL, title = "corcircle", subtitle = title_axis) +
+      theme_gray()
 
 
-  color_axis <- sphere(pca$l1, radius)
-  axis <- qplot(
-    x = pca$l1[, axis1], y = pca$l1[, axis2],
-    color = as.character(color_axis),
-    shape = as.character(color_axis)
-  ) +
-    scale_color_manual(name = "Outliers", values = color_true_false) +
-    scale_shape_manual(name = "Outliers", values = shape_true_false) +
-    labs(x = paste("axis", axis1), y = paste("axis", axis2), title = title_axis)
-  theme_gray()
+    color_axis <- sphere(l1, radius)
+    axis <- qplot(
+      x = l1[, axis1], y = l1[, axis2],
+      color = as.character(color_axis),
+      shape = as.character(color_axis)
+    ) +
+      scale_color_manual(name = "Outliers", values = color_true_false) +
+      scale_shape_manual(name = "Outliers", values = shape_true_false) +
+      labs(x = paste("axis", axis1), y = paste("axis", axis2), title = title_axis) +
+      theme_gray()
+  })
 
-
-  return(list(pca = pca, corcircle = corcircle, axis = axis, result = color_axis))
+  return(list(plot = list(corcircle = corcircle, axis = axis), result = color_axis))
 }
 
 
@@ -247,7 +244,7 @@ som_analysis <- function(data, som = NULL) {
     ggtitle("Neighbour distance plot"))
 
 
-  codes <- as.data.table(getCodes(som), keep.rownames = T)
+  codes <- as.data.table(getCodes(som_model), keep.rownames = T)
   codes[, rn := gsub("V", "", rn)]
   codes <- melt(codes, id.vars = 1)
 

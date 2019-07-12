@@ -93,7 +93,6 @@ AfterDataset <- function(input, output, session, data) {
 
 
 parameterBox_server <- function(input, output, session, columns, param) {
-
   output$colnames <- renderText(paste(columns()[-1], collapse = ", "))
 
 

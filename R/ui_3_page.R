@@ -2,8 +2,8 @@ box_pca_ui <- function(id) {
   ns <- NS(id)
 
   tagList(
-    textOutput(ns("inertia")),
-    box_PlotOutput_ui(ns("plot")),
+    verbatimTextOutput(ns("inertia")),
+    plotOutput(ns("plot")),
 
     # To put the two boxes (numeric input and text output) in the same line, and the text centered
     column(12,

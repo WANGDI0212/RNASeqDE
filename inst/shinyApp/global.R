@@ -10,11 +10,8 @@ library(shinyFeedback)
 library(shiny)
 library(shinyWidgets)
 library(purrr)
-library(tibble)
+library(ggplot2)
 
-
-
-theme_set(theme_gray())
 
 shinyOptions("shiny.launch.browser" = T)
 shinyOptions("shiny.trace" = T)

@@ -23,9 +23,8 @@ FileInput <- function(id, label, accept) {
 }
 
 
-boxParameters = function(id){
-
-  ns = NS(id)
+boxParameters <- function(id) {
+  ns <- NS(id)
 
   tagList(
     # Names of the columns
@@ -48,19 +47,5 @@ boxParameters = function(id){
     # table contrast
     h3("contrast"),
     rHandsontableOutput(ns("contrast"))
-
   )
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

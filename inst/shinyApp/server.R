@@ -17,22 +17,23 @@ function(input, output, session) {
 
 
   # import the dataset we will use for the rest
-  inv = callModule(csvFile, "comptage_table")
-  param = callModule(AfterDataset, "comptage_table", inv)
+  inv <- callModule(csvFile, "comptage_table")
+  param <- callModule(AfterDataset, "comptage_table", inv)
 
   observeEvent(input$"comptage_table-file", {
     # show the box
-    c("box_DATASET",
+    c(
+      "box_DATASET",
       "box_PARAM",
       "but_DATASET",
       "down_PARAM",
-      "down_PARAM_bttn") %>% walk(showElement)
-
+      "down_PARAM_bttn"
+    ) %>% walk(showElement)
   })
 
 
-  param = callModule(parametersInput_server, "param_in", reactive(colnames(inv())), param)
-  param = callModule(parameterBox_server, "parameters", reactive(colnames(inv())), param)
+  param <- callModule(parametersInput_server, "param_in", reactive(colnames(inv())), param)
+  param <- callModule(parameterBox_server, "parameters", reactive(colnames(inv())), param)
 
 
 
@@ -97,7 +98,7 @@ function(input, output, session) {
   })
 
 
-  plot_list = callModule(comparison_box_server, "comparison", data_comp, plot_list)
+  plot_list <- callModule(comparison_box_server, "comparison", data_comp, plot_list)
   callModule(twoPlot_server, "comparison", reactive(plot_list$Smear_plot), reactive(plot_list$volcano_plot))
   callModule(twoPlot_server, "heatmap", reactive(plot_list$heatmap_non_contrast), reactive(plot_list$heatmap_contrast))
 
@@ -115,11 +116,11 @@ function(input, output, session) {
       fwrite(data_comp(), file.path(path, "comparison.csv"), sep = "\t")
 
       # take all the plot
-      list_plot = reactiveValuesToList(plot_list)
+      list_plot <- reactiveValuesToList(plot_list)
 
       # remove the plot we will create non the less
-      list_plot$Smear_plot = NULL
-      list_plot$volcano_plot = NULL
+      list_plot$Smear_plot <- NULL
+      list_plot$volcano_plot <- NULL
 
       # save the other plot
       plot_list_save(list_plot, path)
@@ -128,11 +129,11 @@ function(input, output, session) {
       sapply(split(data_comp(), by = "comp_name"), function(subdata) {
         title <- subdata[, unique(comp_name)]
 
-        is_inferior = subdata[, as.character(pval_adj < input$"comparison-pvalue")]
+        is_inferior <- subdata[, as.character(pval_adj < input$"comparison-pvalue")]
 
         name_legend <- paste("adj PValue <=", input$"comparison-pvalue")
         gg_begin <- ggplot(subdata, aes(col = is_inferior, shape = is_inferior)) +
-          labs(shape=name_legend, colour=name_legend, title = title) +
+          labs(shape = name_legend, colour = name_legend, title = title) +
           scale_color_manual(values = color_true_false) +
           scale_shape_manual(values = shape_true_false) + theme_gray()
 
@@ -180,38 +181,23 @@ function(input, output, session) {
 
     # apperance of the download button if there is at least one selection in chkgrp tools
     # the . is the element of the vector
-    c("down_ANA", "down_ANA_bttn") %>% walk(~ toggleElement(.), condition = !is.null(input$chkgrp_TOOLS))
+    c("down_ANA", "down_ANA_bttn") %>% walk(~ toggleElement(., condition = !is.null(input$chkgrp_TOOLS)))
 
-    tribble(
-      ~box,   ~id,
+    # toggle the elements when actif
+    # the .x represent the box variable
+    # the .y represent the id variable
+    as.data.frame(matrix(c(
       "box_PCA", "PCA",
       "box_tSNE", "tSNE",
       "box_SOM", "SOM",
       "box_DBSCAN", "DBSCAN",
       "box_ABOD", "ABOD",
       "box_ISOFOR", "ISOFOR"
-    ) %>% pwalk( ~ toggleElement(.x, condition = .y %in% input$chkgrp_TOOLS) )
+    ), ncol = 2, byrow = T)) %>% pwalk(~ toggleElement(.x, condition = .y %in% input$chkgrp_TOOLS))
 
-  }, ignoreNULL = F)
-
-  # PCA box
-  observeEvent({
-    input$chkgrp_TOOLS
-    input$num_PCA
-  }, {
-
-    if ("PCA" %in% input$chkgrp_TOOLS) {
-      ana_object$pca <- pca_analysis(mat_res(), pca = ana_object$pca$pca, radius = input$num_PCA_sphere_radius)
-
-      # the plot
-      output$plot_PCA <- renderPlot(plot_grid(ana_object$pca$corcircle, ana_object$pca$axis, nrow = 1))
-      output$txt_PCA_out <- renderText(outliers_number(sum(ana_object$pca$result)))
-    } else {
-      ana_object$pca <- NULL
-    }
   }, ignoreNULL = F, ignoreInit = T)
 
-
+  ana_object = callModule(PCA_box_server, "PCA", ana_object, mat_res, reactive(is.null(ana_object$pca) && "PCA" %in% input$chkgrp_TOOLS))
 
   # tSNE box
   observeEvent({
@@ -219,7 +205,6 @@ function(input, output, session) {
     input$num_SNE_EPSILON
     input$num_SNE_MIN
   }, {
-
     if ("tSNE" %in% input$chkgrp_TOOLS) {
       ana_object$tsne <- tsne_analysis(data = mat_res(), tsne = ana_object$tsne$tsne, epsilon = input$num_tSNE_EPSILON, minpts = input$num_tSNE_MIN)
 
@@ -238,7 +223,6 @@ function(input, output, session) {
     input$num_DBSCAN_EPSILON
     input$num_DBSCAN_MIN
   }, {
-
     if ("DBSCAN" %in% input$chkgrp_TOOLS) {
       ana_object$dbscan <- dbscan_analysis(mat_res(), ana_object$dbscan, epsilon = input$num_DBSCAN_EPSILON, minpts = input$num_DBSCAN_MIN)
       output$txt_DBSCAN <- renderText(print_dbscan(ana_object$dbscan))
@@ -254,7 +238,6 @@ function(input, output, session) {
     input$num_ABOD_KNN
     input$num_ABOD_QUANTILE
   }, {
-
     if ("ABOD" %in% input$chkgrp_TOOLS) {
       ana_object$abod <- abod_analysis(mat_res(), ana_object$abod, k = input$num_ABOD_KNN)
       output$txt_ABOD <- renderPrint(with(ana_object$abod, {
@@ -278,7 +261,6 @@ function(input, output, session) {
     input$sel_ISOFOR_ntree
     input$sli_ISOFOR_threshold
   }, {
-
     if ("ISOFOR" %in% input$chkgrp_TOOLS) {
       ana_object$isofor <- isofor_analysis(mat_res(), ana_object$isofor,
         nTrees = as.integer(input$sel_ISOFOR_ntree),
@@ -302,11 +284,10 @@ function(input, output, session) {
   observeEvent({
     input$chkgrp_TOOLS
   }, {
-
     if ("SOM" %in% input$chkgrp_TOOLS) {
       update <- is.null(ana_object$som)
 
-      if(update){
+      if (update) {
         ana_object$som <- som_analysis(mat_res(), som = ana_object$som$som)
 
         output$plot_SOM <- renderPlot(
@@ -315,8 +296,7 @@ function(input, output, session) {
       }
 
       # render the text of outliers
-      output$txt_SOM = renderText(outliers_number(ana_object$som$data[dist > quantile(dist, input$num_SOM_QUANTILE), sum(N, na.rm = T)]))
-
+      output$txt_SOM <- renderText(outliers_number(ana_object$som$data[dist > quantile(dist, input$num_SOM_QUANTILE), sum(N, na.rm = T)]))
     } else {
       ana_object$som <- NULL
     }
@@ -331,44 +311,31 @@ function(input, output, session) {
     filename = function() paste0("analysis_", Sys.Date(), ".zip"),
     contentType = "application/zip",
     content = function(file) {
-
       showNotification("In prepartion for the download")
 
       list_ana <- reactiveValuesToList(ana_object)
       path <- file.path(tempdir(), "analysis")
       dir.create(path, showWarnings = F, recursive = T)
+      data <- as.data.table(mat_res(), keep.rownames = T)
 
-      # take the parameters who are in the input for the analysis
-      inputlist = reactiveValuesToList(input)
-      inputlist = inputlist[-grep("-selectized$", names(inputlist))]
-      inputlist = inputlist[grep("(PCA)|(SOM)|(ISOFOR)|(tSNE)|(DBSCAN)|(ABOD)", names(inputlist))]
-      strsplit(names(inputlist), "_")
-      name = sapply(strsplit(names(inputlist), "_"), function(x) paste(x[-1], collapse = " "))
-      write(paste(name, ":", inputlist), file = file.path(path, "input_analysis.txt"))
-
-      # the data from the analysis
-      data = as.data.table(mat_res(), keep.rownames = T)
-      nb_col_before = ncol(data)
+      nb_col_before <- ncol(data)
       with(list_ana, {
-        suppressWarnings(data[, ':='(som_nb_neuron_cluster = som$pred,
-                  tsne_cluster = tsne$dbscan$cluster,
-                  dbscan_cluster = dbscan$cluster,
-                  outliers_pca = pca$result,
-                  outliers_tsne = if (is.null(tsne)) NULL else tsne$scan$cluster == 0,
-                  outliers_som = if (is.null(som)) NULL else with(som, pred %in% as.numeric(data[dist > quantile(dist, 0.95), rn])),
-                  outliers_dbscan = if (is.null(dbscan)) NULL else dbscan$cluster == 0,
-                  outliers_abod = if(is.null(abod)) NULL else with(abod, abod < quantile(abod, 0.05)),
-                  outliers_isolation_forest = if(is.null(isofor)) NULL else with(isofor, isofor > quantile(isofor, 0.95))
-                  )])
+        suppressWarnings(data[, ":="(som_nb_neuron_cluster = som$pred,
+          tsne_cluster = tsne$dbscan$cluster,
+          dbscan_cluster = dbscan$cluster,
+          outliers_pca = pca$result,
+          outliers_tsne = if (is.null(tsne)) NULL else tsne$scan$cluster == 0,
+          outliers_som = if (is.null(som)) NULL else with(som, pred %in% as.numeric(data[dist > quantile(dist, 0.95), rn])),
+          outliers_dbscan = if (is.null(dbscan)) NULL else dbscan$cluster == 0,
+          outliers_abod = if (is.null(abod)) NULL else with(abod, abod < quantile(abod, 0.05)),
+          outliers_isolation_forest = if (is.null(isofor)) NULL else with(isofor, isofor > quantile(isofor, 0.95))
+        )])
       })
 
 
 
       # the score of the outliers methods
       data[, outliers_method := rowSums(.SD) / ncol(.SD), .SDcols = replace(grepl("^outliers", names(data)), 1:nb_col_before, F)]
-
-      # replace the space by _ in all the column names (for excel)
-      setnames(data, names(data), gsub(" ", "_", names(data)))
 
       fwrite(data[outliers_method != 0, .SD, .SDcols = replace(grepl("^outliers", names(data)), 1:nb_col_before, T)], file.path(path, "outliers.csv"), sep = "\t")
       fwrite(data[, .SD, .SDcols = replace(grepl("cluster$", names(data)), 1:nb_col_before, T)], file.path(path, "cluster.csv"), sep = "\t")
