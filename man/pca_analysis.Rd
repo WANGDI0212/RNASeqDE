@@ -4,11 +4,9 @@
 \alias{pca_analysis}
 \title{PCA}
 \usage{
-pca_analysis(data, pca = NULL, axis1 = 1, axis2 = 2, radius = 0)
+pca_analysis(pca, axis1 = 1, axis2 = 2, radius = 0)
 }
 \arguments{
-\item{data}{the data to to the pca analysis}
-
 \item{pca}{the pca if it exist to not recalculate them}
 
 \item{axis1}{the number of the axis 1}
@@ -16,6 +14,8 @@ pca_analysis(data, pca = NULL, axis1 = 1, axis2 = 2, radius = 0)
 \item{axis2}{the number of the axis 2}
 
 \item{radius}{the radius of the circle}
+
+\item{data}{the data to to the pca analysis}
 }
 \description{
 Do the analysis + the graph for the pca

@@ -31,8 +31,12 @@ pca_analysis <- function(pca, axis1 = 1, axis2 = 2, radius = 0) {
 
   color_circle <- "firebrick"
 
+  corcircle = list()
+  axis = list()
+  color_axis = vector()
+
   with(pca, {
-    corcircle <- ggplot(data = NULL, aes(x = c1[, axis1], y = c1[, axis2], label = rownames(c1))) +
+    corcircle <<- ggplot(data = NULL, aes(x = c1[, axis1], y = c1[, axis2], label = rownames(c1))) +
       geom_vline(xintercept = 0, color = color_circle) + geom_hline(yintercept = 0, color = color_circle) +
       geom_segment(aes(xend = 0, yend = 0), arrow = arrow(ends = "first", length = unit(0.25, "cm"))) +
       geom_circle(aes(x0 = 0, y0 = 0, r = 1), inherit.aes = F, color = color_circle) +
@@ -41,8 +45,8 @@ pca_analysis <- function(pca, axis1 = 1, axis2 = 2, radius = 0) {
       theme_gray()
 
 
-    color_axis <- sphere(l1, radius)
-    axis <- qplot(
+    color_axis <<- sphere(l1, radius)
+    axis <<- qplot(
       x = l1[, axis1], y = l1[, axis2],
       color = as.character(color_axis),
       shape = as.character(color_axis)

@@ -90,7 +90,7 @@ server = function(input, output, session){
 
   # the object of the analysis
   ana_object <- reactiveValues()
-  mat_res = reactiveVal(as.matrix(fread("test/test.txt"), rownames = "name_gene"))
+  mat_res = reactiveVal(as.matrix(fread("/data/RNA-seq_project/pipeline/RNASeqDE/test/test.txt"), rownames = "name_gene"))
 
   observeEvent(input$chkgrp_TOOLS, {
 
