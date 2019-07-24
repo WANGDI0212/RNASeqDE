@@ -4,7 +4,7 @@
 \alias{som_analysis}
 \title{self organizing map analysis}
 \usage{
-som_analysis(data, som = NULL)
+som_analysis(data)
 }
 \arguments{
 \item{som}{}

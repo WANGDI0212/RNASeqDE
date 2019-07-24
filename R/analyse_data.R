@@ -85,13 +85,7 @@ pca_analysis <- function(pca, axis1 = 1, axis2 = 2, radius = 0) {
 #'
 #' @examples
 #' ""
-tsne_analysis <- function(data, tsne = NULL, scan = NULL, epsilon = 0, minpts = 0) {
-  if (is.null(tsne)) {
-    tsne <- Rtsne(data, pca = F, normalize = F, max_iter = 1000, theta = 0)
-    tsne$Y <- as.data.table(tsne$Y)
-  }
-
-  scan <- dbscan_analysis(tsne$Y, epsilon = epsilon, minpts = minpts)
+tsne_analysis <- function(tsne = NULL, scan = NULL) {
 
   plot <- ggplot(tsne$Y, aes(V1, V2)) +
     geom_point(aes(
@@ -103,7 +97,7 @@ tsne_analysis <- function(data, tsne = NULL, scan = NULL, epsilon = 0, minpts = 
     ggtitle("tSNE") + xlab("axis 1") + ylab("axis 2") +
     theme_gray()
 
-  return(list(tsne = tsne, dbscan = scan, tsne_plot = plot))
+  return(plot)
 }
 
 
@@ -206,12 +200,9 @@ isofor_analysis <- function(data, isofor = NULL, nTrees = 100, phi = 8) {
 #' @importFrom ggplot2 scale_fill_manual element_blank element_text
 #' @importFrom ggforce geom_circle
 #'
-#' @examples
-som_analysis <- function(data, som = NULL) {
-  if (is.null(som)) {
-    som <- somgrid(xdim = 10, ydim = 10, topo = "hexagonal", neighbourhood.fct = "gaussian")
-    som <- som(data, grid = som, rlen = 200)
-  }
+som_analysis <- function(data) {
+  som <- somgrid(xdim = 10, ydim = 10, topo = "hexagonal", neighbourhood.fct = "gaussian")
+  som <- som(data, grid = som, rlen = 200)
 
   # take the som and return the mean of the distance between each neurone
   neigh.dist <- function(som) {
@@ -237,6 +228,11 @@ som_analysis <- function(data, som = NULL) {
 
   pred <- predict(som)
 
+  # data som is the data table where
+  # rn : the label of the neuron
+  # x and y : the coordinate of the neurons
+  # N : the number of genes inside the neurons
+  # dist : the mean distance between each neighboor neurons
   data_som <- as.data.table(expand.grid(x = seq(som$grid$xdim), y = seq(som$grid$ydim)), keep.rownames = T)
   data_som[as.data.table(table(pred$unit.classif), keep.rownames = T), on = c("rn" = "V1"), N := i.N]
   data_som[, dist := neigh.dist(som)]
@@ -248,7 +244,7 @@ som_analysis <- function(data, som = NULL) {
     ggtitle("Neighbour distance plot"))
 
 
-  codes <- as.data.table(getCodes(som_model), keep.rownames = T)
+  codes <- as.data.table(getCodes(som), keep.rownames = T)
   codes[, rn := gsub("V", "", rn)]
   codes <- melt(codes, id.vars = 1)
 

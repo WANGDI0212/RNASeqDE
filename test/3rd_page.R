@@ -8,7 +8,7 @@ library(shinydashboard)
 library(shinydashboardPlus)
 library(data.table)
 
-ui = dashboardPagePlus(
+ui <- dashboardPagePlus(
   header = dashboardHeaderPlus(title = "RNA-seq DE"), title = "RNAseqDE",
   sidebar = dashboardSidebar(
     sidebarMenu(
@@ -20,7 +20,7 @@ ui = dashboardPagePlus(
     useShinyjs(),
     tabItems(
 
-    # Analysis of the result --------------------------------------------------
+      # Analysis of the result --------------------------------------------------
 
       tabItem(
         "tab_ANA",
@@ -28,8 +28,8 @@ ui = dashboardPagePlus(
           box(
             width = 12, title = "Tools for analysis",
             checkboxGroupInput("chkgrp_TOOLS", "Choose the tools",
-                               inline = T,
-                               choices = c("PCA", "tSNE", "self organizing map" = "SOM", "DBSCAN", "ABOD", "isolation forest" = "ISOFOR")
+              inline = T,
+              choices = c("PCA", "tSNE", "self organizing map" = "SOM", "DBSCAN", "ABOD", "isolation forest" = "ISOFOR")
             )
           ),
 
@@ -78,7 +78,7 @@ ui = dashboardPagePlus(
 
 
 
-server = function(input, output, session){
+server <- function(input, output, session) {
 
   # stop the serveur in the end of the session
   session$onSessionEnded(function() {
@@ -90,13 +90,13 @@ server = function(input, output, session){
 
   # the object of the analysis
   ana_object <- reactiveValues()
-  mat_res = reactiveVal(as.matrix(fread("/data/RNA-seq_project/pipeline/RNASeqDE/test/test.txt"), rownames = "name_gene"))
+  mat_res <- reactiveVal(as.matrix(fread("/data/RNA-seq_project/pipeline/RNASeqDE/test/test.txt"), rownames = "name_gene"))
 
   observeEvent(input$chkgrp_TOOLS, {
 
     # apperance of the download button if there is at least one selection in chkgrp tools
     # the . is the element of the vector
-    c("down_ANA", "down_ANA_bttn") %>% walk(~ toggleElement(.), condition = !is.null(input$chkgrp_TOOLS))
+    c("down_ANA", "down_ANA_bttn") %>% walk(~ if (!is.null(input$chkgrp_TOOLS)) showElement(.) else hideElement(.))
 
     # toggle the elements when actif
     # the .x represent the box variable
@@ -112,11 +112,21 @@ server = function(input, output, session){
 
   }, ignoreNULL = F)
 
-  ana_object = callModule(PCA_box_server, "PCA", ana_object, mat_res, reactive(is.null(ana_object$pca) && "PCA" %in% input$chkgrp_TOOLS))
+  ana_object$PCA <- callModule(PCA_box_server, "PCA", mat_res, reactive("PCA" %in% input$chkgrp_TOOLS))
+  ana_object$ABOD = callModule(ABOD_box_server, "ABOD", mat_res, reactive("ABOD" %in% input$chkgrp_TOOLS))
+  ana_object$ISOFOR = callModule(ISOFOR_box_server, "isolation_forest", mat_res, reactive("ISOFOR" %in% input$chkgrp_TOOLS))
+  ana_object$DBSCAN = callModule(DBSCAN_box_server, "DBSCAN", mat_res, reactive("DBSCAN" %in% input$chkgrp_TOOLS))
+  ana_object$SOM = callModule(SOM_box_server, "self_organizing_map", mat_res, reactive("SOM" %in% input$chkgrp_TOOLS))
+
+  tSNE = callModule(tSNE_box_server, "tSNE", mat_res, reactive((exists("tSNE") || is.null(tSNE)) && "tSNE" %in% input$chkgrp_TOOLS))
+
+  # observe(print(reactiveValuesToList(ana_object$ABOD)))
 
 }
 
 
-shinyApp(ui, server, options = list("shiny.launch.browser" = T,
-                                    "shiny.trace" = T, "shiny.autoreload" = T,
-                                    "shiny.reactlog"=T, "shiny.fullstacktrace" = T))
+shinyApp(ui, server, options = list(
+  "shiny.launch.browser" = T,
+  "shiny.trace" = T, "shiny.autoreload" = T,
+  "shiny.reactlog" = T, "shiny.fullstacktrace" = T
+))
