@@ -19,9 +19,6 @@ PCA_box_server <- function(input, output, session, data, update) {
         )
       })
     }
-    else {
-      ana$pca <- NULL
-    }
   },
   ignoreInit = T
   )
@@ -34,9 +31,7 @@ PCA_box_server <- function(input, output, session, data, update) {
       input$sphere_radius
     }
   }, {
-    if (is.null(ana$pca)) {
-      ana$res <- NULL
-    } else {
+    if (!is.null(ana$pca)) {
       # draw the plot the result of the pca
       ana$res <- pca_analysis(pca = ana$pca, radius = input$sphere_radius)
 
@@ -66,33 +61,27 @@ tSNE_box_server <- function(input, output, session, data, update) {
       ana$tsne <- Rtsne(data(), pca = F, normalize = F, max_iter = 1000, theta = 0)
       ana$tsne$Y <- as.data.table(ana$tsne$Y)
     }
-    else {
-      ana$tsne <- NULL
-      ana$dbscan <- NULL
-    }
   },
   ignoreInit = T
   )
 
   # if there the pca change or the input sphere radius (if it not NA)
 
-  observeEvent(ana$tsne, {
+  observeEvent({
+    ana$tsne
+    if (!is.na(input$"dbscan-epsillon")) {
+      input$"dbscan-epsillon"
+      input$"dbscan-minPts"
+    }
+  }, {
     if (!is.null(ana$tsne)) {
-      isolate({
-        a <- callModule(DBSCAN_box_server, "dbscan", reactive(ana$tsne$Y), update)
-      })
-      ana$dbscan <- callModule(DBSCAN_box_server, "dbscan", reactive(ana$tsne$Y), update)$dbscan
-    } else {
-      ana$dbscan
+      ana$dbscan <- dbscan(data(), input$"dbscan-epsillon", input$"dbscan-minPts")
+      output$"dbscan-result" <- renderText(print_dbscan(ana$dbscan))
     }
   })
 
   observeEvent({
     ana$dbscan
-    # if (!is.na(input$"dbscan-epsillon")) {
-    #   input$"dbscan-epsillon"
-    #   input$"dbscan-minPts"
-    # }
   }, {
     if (is.null(ana$dbscan)) {
       ana$plot <- NULL
@@ -123,8 +112,6 @@ DBSCAN_box_server <- function(input, output, session, data, update) {
     if (update()) {
       ana$dbscan <- dbscan(data(), input$epsillon, input$minPts)
       output$result <- renderText(print_dbscan(ana$dbscan))
-    } else {
-      ana$dbscan <- NULL
     }
   })
 
@@ -142,9 +129,6 @@ ABOD_box_server <- function(input, output, session, data, update) {
   }, {
     if (update()) {
       capture.output(ana$abod <- suppressWarnings(abod(data(), method = "knn", k = input$knn)))
-    } else {
-      ana$adob <- NULL
-      ana$res <- NULL
     }
   }, ignoreInit = T)
 
@@ -174,8 +158,6 @@ ISOFOR_box_server <- function(input, output, session, data, update) {
     if (update()) {
       isofor <- iForest(data(), as.integer(input$trees_number), 2^as.integer(input$tree_depth))
       ana$isofor <- predict(isofor, data())
-    } else {
-      ana$isofor <- NULL
     }
   }, ignoreInit = T)
 
@@ -192,8 +174,6 @@ ISOFOR_box_server <- function(input, output, session, data, update) {
           sep = "\n\n"
         )
       )
-    } else {
-      ana$res <- NULL
     }
   }, ignoreInit = T)
 
@@ -213,8 +193,6 @@ SOM_box_server <- function(input, output, session, data, update) {
       output$plot <- renderPlot({
         with(ana$som, plot_grid(plot_grid(count, dist), codes, nrow = 2, rel_heights = c(1, 2)))
       })
-    } else {
-      ana$som <- NULL
     }
   }, ignoreInit = T)
 
@@ -224,8 +202,11 @@ SOM_box_server <- function(input, output, session, data, update) {
   }, {
     # the N is the number of genes inside a neurone
     # so we pick the number of neurons
-    output$outliers <- renderText(outliers_number(ana$som$data[dist > quantile(dist, input$"quantile-quantile"), sum(N, na.rm = T)]))
-  }, ignoreInit = T)
+    if (!is.null(ana$som)) {
+      ana$som$res <- with(ana$som, pred %in% as.numeric(data[dist > quantile(dist, input$"quantile-quantile"), rn]))
+      output$outliers <- renderText(outliers_number(sum(ana$som$res)))
+    }
+  }, ignoreInit = T, ignoreNULL = T)
 
   return(ana)
 }
