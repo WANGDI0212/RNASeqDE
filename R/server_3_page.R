@@ -90,7 +90,7 @@ tSNE_box_server <- function(input, output, session, data, update) {
       # output$"dbscan-result" <- renderText(print_dbscan(ana$dbscan))
 
       # draw the plot the result of the tsne
-      ana$plot <- tsne_analysis(tsne = ana$tsne, scan = ana$dbscan)
+      ana$plot_tsne <- tsne_analysis(tsne = ana$tsne, scan = ana$dbscan)
 
       # make the plot
       output$plot <- renderPlot(ana$plot)
@@ -103,13 +103,32 @@ tSNE_box_server <- function(input, output, session, data, update) {
   return(ana)
 }
 
+#' @importFrom purrr map_lgl compact
+update_change_value = function(x, y){
+
+  if (is.null(x) || is.null(y))
+    return(T)
+
+  # identify and nullify the NULL elements
+  y = y[ x %>% map_lgl(~ !is.null(.)) ]
+  x = x[ y %>% map_lgl(~ !is.null(.)) ]
+
+  x = compact(x)
+  y = compact(y)
+
+  if (length(x) == 0)
+    return(T)
+
+  return(any(x != y))
+}
+
 
 #' @importFrom dbscan dbscan
 DBSCAN_box_server <- function(input, output, session, data, update) {
   ana <- reactiveValues()
 
   observe({
-    if (update()) {
+    if (update() || update_change_value(c(ana$dbscan$eps, ana$dbscan$minPts), c(input$epsillon, input$minPts))) {
       ana$dbscan <- dbscan(data(), input$epsillon, input$minPts)
       output$result <- renderText(print_dbscan(ana$dbscan))
     }
@@ -127,8 +146,9 @@ ABOD_box_server <- function(input, output, session, data, update) {
     update()
     data()
   }, {
-    if (update()) {
+    if (update() || update_change_value(ana$knn, input$knn)) {
       capture.output(ana$abod <- suppressWarnings(abod(data(), method = "knn", k = input$knn)))
+      ana$knn = input$knn
     }
   }, ignoreInit = T)
 
@@ -155,9 +175,11 @@ ISOFOR_box_server <- function(input, output, session, data, update) {
     update()
     data()
   }, {
-    if (update()) {
+    if (update() || update_change_value(c(ana$trees_number, ana$tree_depth), c(input$trees_number, input$tree_depth))) {
       isofor <- iForest(data(), as.integer(input$trees_number), 2^as.integer(input$tree_depth))
       ana$isofor <- predict(isofor, data())
+      ana$trees_number = input$trees_number
+      ana$tree_depth = input$tree_depth
     }
   }, ignoreInit = T)
 

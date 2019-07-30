@@ -82,12 +82,12 @@ pca_save <- function(pca = NULL, radius = 0, path) {
   combi <- combn(1:pca$nf, 2)
   sapply(1:ncol(combi), function(x) {
     title_partial <- paste(combi[1, x], combi[2, x], sep = "_")
-    tmp <- pca_analysis(pca$tab, pca, combi[1, x], combi[2, x], radius)
-    ggsave(paste0("pca_corcircle_axis_", title_partial, ".svg"), tmp$corcircle, path = path)
-    ggsave(paste0("pca_axis_", title_partial, ".svg"), tmp$axis, path = path)
+    tmp <- pca_analysis(pca, combi[1, x], combi[2, x], radius)
+    ggsave(paste0("pca_corcircle_axis_", title_partial, ".svg"), tmp$plot$corcircle, path = path)
+    ggsave(paste0("pca_axis_", title_partial, ".svg"), tmp$plot$axis, path = path)
 
     invisible()
   })
 
-  return(pca_analysis(pca$tab, pca, radius = radius)$result)
+  return(NULL)
 }
