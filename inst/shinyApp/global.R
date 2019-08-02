@@ -11,6 +11,7 @@ library(shiny)
 library(shinyWidgets)
 library(purrr)
 library(ggplot2)
+library(configr)
 
 
 shinyOptions("shiny.launch.browser" = T)

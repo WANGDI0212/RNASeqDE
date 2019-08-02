@@ -30,7 +30,8 @@ Imports:
 	shinyFeedback,
 	shiny,
 	purrr,
-	svglite
+	svglite,
+	configr
 Depends: 
 	R(>= 3.0),
 	edgeR,

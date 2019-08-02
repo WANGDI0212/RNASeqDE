@@ -69,11 +69,16 @@ dashboardPagePlus(
       tabItem(
         "tab_ANA",
         fluidRow(
+          # the first box with the tools of analysis and the download button
           box(
             width = 12, title = "Tools for analysis",
-            checkboxGroupInput("chkgrp_TOOLS", "Choose the tools",
-              inline = T,
-              choices = c("PCA", "tSNE", "self organizing map" = "SOM", "DBSCAN", "ABOD", "isolation forest" = "ISOFOR")
+            column(12,
+              align = "left", style = "display: flex;flex-direction: row;align-items: center;",
+              div(style = "width: 90%", checkboxGroupInput("chkgrp_TOOLS", "Choose the tools",
+                inline = T,
+                choices = c("PCA", "tSNE", "self organizing map" = "SOM", "DBSCAN", "ABOD", "isolation forest" = "ISOFOR")
+              )),
+              div(style = "width: 10%", downloadBttn("down_ANA", style = "bordered", color = "primary"), offset = 10)
             )
           ),
 
@@ -111,9 +116,7 @@ dashboardPagePlus(
           hidden(boxWithId(
             id = "box_ISOFOR", title = "isolation forest", width = 6,
             box_isofor_ui("isolation_forest")
-          )),
-
-          downloadBttn("down_ANA",  style = "bordered", color = "primary")
+          ))
         )
       )
     )

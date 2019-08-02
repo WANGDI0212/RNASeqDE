@@ -79,14 +79,11 @@ pca_save <- function(pca = NULL, radius = 0, path) {
   }
   dir.create(path, showWarnings = F, recursive = T)
 
-  combi <- combn(1:pca$nf, 2)
-  sapply(1:ncol(combi), function(x) {
-    title_partial <- paste(combi[1, x], combi[2, x], sep = "_")
-    tmp <- pca_analysis(pca, combi[1, x], combi[2, x], radius)
+  as.data.frame(t(combn(1:pca$nf, 2))) %>% pwalk(~ {
+    title_partial <- paste(.x, .y, sep = "_")
+    tmp <- pca_analysis(pca, .x, .y, radius)
     ggsave(paste0("pca_corcircle_axis_", title_partial, ".svg"), tmp$plot$corcircle, path = path)
     ggsave(paste0("pca_axis_", title_partial, ".svg"), tmp$plot$axis, path = path)
-
-    invisible()
   })
 
   return(NULL)

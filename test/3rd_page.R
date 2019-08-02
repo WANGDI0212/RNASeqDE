@@ -7,6 +7,7 @@ library(ggplot2)
 library(shinydashboard)
 library(shinydashboardPlus)
 library(data.table)
+library(configr)
 
 ui <- dashboardPagePlus(
   header = dashboardHeaderPlus(title = "RNA-seq DE"), title = "RNAseqDE",
@@ -27,10 +28,12 @@ ui <- dashboardPagePlus(
         fluidRow(
           box(
             width = 12, title = "Tools for analysis",
-            checkboxGroupInput("chkgrp_TOOLS", "Choose the tools",
+            column(12, align = "left", style = "display: flex;flex-direction: row;align-items: center;",
+            div(style = "width: 90%", checkboxGroupInput("chkgrp_TOOLS", "Choose the tools",
               inline = T,
               choices = c("PCA", "tSNE", "self organizing map" = "SOM", "DBSCAN", "ABOD", "isolation forest" = "ISOFOR")
-            )
+            )),
+            div(style = "width: 10%", downloadBttn("down_ANA", style = "bordered", color = "primary"), offset = 10))
           ),
 
           # PCA
@@ -67,9 +70,7 @@ ui <- dashboardPagePlus(
           hidden(boxWithId(
             id = "box_ISOFOR", title = "isolation forest", width = 6,
             box_isofor_ui("isolation_forest")
-          )),
-
-          downloadBttn("down_ANA", style = "bordered", color = "primary")
+          ))
         )
       )
     )
@@ -138,16 +139,35 @@ server <- function(input, output, session) {
 
 
   output$down_ANA <- downloadHandler(
-    filename = function() paste0("analysis_", Sys.Date(), ".zip"),
+    filename = function() paste0("analysis_", gsub(" ", "_", Sys.time()), ".zip"),
     contentType = "application/zip",
     content = function(file) {
       showNotification("In prepartion for the download")
 
+      # initialization + path where to write
       list_ana <- reactiveValuesToList(ana_object) %>% map(~ reactiveValuesToList(.))
       path <- file.path(tempdir(), "analysis")
       dir.create(path, showWarnings = F, recursive = T)
       data <- as.data.table(mat_res(), keep.rownames = T)
 
+      # take the patterns to keep all values we want
+      patterns = paste0("(", input$chkgrp_TOOLS, ")", collapse = "|")
+      patterns = sub("SOM", "self_organizing_map", patterns)
+      patterns = sub("ISOFOR", "isolation_forest", patterns)
+
+      # convert the input list and search for what we really want
+      inputlist = reactiveValuesToList(input)
+      inputlist = inputlist[names(inputlist) %>% keep(grepl, pattern = patterns) %>% discard(grepl, pattern = "selectized")]
+      names(inputlist) = gsub("quantile-quantile", "quantile", names(inputlist))
+
+      # put the configuration in a file
+      name = names(inputlist) %>% strsplit("-") %>% map_chr(1) %>% unique
+      name %>% map(~ {
+        inputlist[grepl(., names(inputlist))] %>% set_names(~ strsplit(., "-") %>% map_chr(2))
+      }) %>% set_names(name) %>% write.config(file.path = file.path(path, 'parameters.txt'))
+
+
+      # the data from the analysis
       nb_col_before <- ncol(data)
       with(list_ana, {
         suppressWarnings(data[, ":="(
@@ -165,22 +185,25 @@ server <- function(input, output, session) {
 
 
 
-
+      # the score of the outliers methods
       data[, outliers_method := rowSums(.SD) / ncol(.SD), .SDcols = replace(grepl("^outliers", names(data)), 1:nb_col_before, F)]
 
+      # replace the space by _ in all the column names (for excel)
+      setnames(data, names(data), gsub(" ", "_", names(data)))
+
+      # write files
       fwrite(data[outliers_method != 0, .SD, .SDcols = replace(grepl("^outliers", names(data)), 1:nb_col_before, T)], file.path(path, "outliers.csv"), sep = "\t")
       fwrite(data[, .SD, .SDcols = replace(grepl("cluster$", names(data)), 1:nb_col_before, T)], file.path(path, "cluster.csv"), sep = "\t")
 
+      # save all the plot
       pca_save(list_ana$PCA$pca, input$`PCA-sphere_radius`, path)
       plot_list_save(list_ana$tSNE, path)
       plot_list_save(list_ana$SOM$som, path)
 
+      # zip the file and
       zip(file, path, flags = "-jr9Xm")
     }
   )
-
-
-  # observe(print(names(ana_object) %>% map( ~ reactiveValuesToList(ana_object[[.]]))))
 }
 
 
