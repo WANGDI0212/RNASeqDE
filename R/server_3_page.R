@@ -66,7 +66,6 @@ tSNE_box_server <- function(input, output, session, data, update) {
   )
 
   # if there the pca change or the input sphere radius (if it not NA)
-
   observeEvent({
     ana$tsne
     if (!is.na(input$"dbscan-epsillon")) {
@@ -75,7 +74,7 @@ tSNE_box_server <- function(input, output, session, data, update) {
     }
   }, {
     if (!is.null(ana$tsne)) {
-      ana$dbscan <- dbscan(data(), input$"dbscan-epsillon", input$"dbscan-minPts")
+      ana$dbscan <- dbscan(data(), eps = input$"dbscan-epsillon", minPts = input$"dbscan-minPts")
       output$"dbscan-result" <- renderText(print_dbscan(ana$dbscan))
     }
   })
@@ -84,7 +83,7 @@ tSNE_box_server <- function(input, output, session, data, update) {
     ana$dbscan
   }, {
     if (is.null(ana$dbscan)) {
-      ana$plot <- NULL
+      ana$plot_tsne <- NULL
     } else {
       # ana$dbscan <- dbscan(ana$tsne$Y, input$"dbscan-epsillon", input$"dbscan-minPts")
       # output$"dbscan-result" <- renderText(print_dbscan(ana$dbscan))
@@ -93,7 +92,7 @@ tSNE_box_server <- function(input, output, session, data, update) {
       ana$plot_tsne <- tsne_analysis(tsne = ana$tsne, scan = ana$dbscan)
 
       # make the plot
-      output$plot <- renderPlot(ana$plot)
+      output$plot <- renderPlot(ana$plot_tsne)
 
       # Render the text
       output$outliers <- renderText(outliers_number(sum(ana$dbscan$cluster == 0)))
