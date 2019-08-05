@@ -28,10 +28,15 @@ Imports:
 	shinydashboard,
 	shinyalert,
 	shinyFeedback,
-	shiny
+	shiny,
+	purrr,
+	svglite,
+	configr
 Depends: 
 	R(>= 3.0),
 	edgeR,
 	data.table (>= 1.9.8),
 RoxygenNote: 6.1.1
 Roxygen: list(markdown = TRUE)
+SystemRequirements:
+	libcairo2-dev.

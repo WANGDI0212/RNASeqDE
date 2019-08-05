@@ -11,20 +11,16 @@
 #' @return
 #' @export
 #'
-#' @importFrom ade4 dudi.pca
 #' @importFrom ggforce geom_circle
 #' @importFrom ggplot2 ggplot geom_segment geom_label coord_fixed xlab ylab ggtitle theme_gray scale_color_manual scale_shape_manual qplot arrow
 #'
 #' @examples
 #' ""
-pca_analysis <- function(data, pca = NULL, axis1 = 1, axis2 = 2, radius = 0) {
-  if (is.null(pca)) {
-    pca <- dudi.pca(data, center = F, scale = F, scannf = F, nf = 5)
-  }
+pca_analysis <- function(pca, axis1 = 1, axis2 = 2, radius = 0) {
 
   # for the sphere
   sphere <- function(x, radius) {
-    center <- apply(x, 2, mean)
+    center <- colMeans(x)
 
     vec_dist <- rowSums(sweep(x, 2, center, "-")^2) >= radius^2
 
@@ -35,28 +31,33 @@ pca_analysis <- function(data, pca = NULL, axis1 = 1, axis2 = 2, radius = 0) {
 
   color_circle <- "firebrick"
 
-  corcircle <- ggplot(data = NULL, aes(x = pca$c1[, axis1], y = pca$c1[, axis2], label = rownames(pca$c1))) +
-    geom_vline(xintercept = 0, color = color_circle) + geom_hline(yintercept = 0, color = color_circle) +
-    geom_segment(aes(xend = 0, yend = 0), arrow = arrow(ends = "first", length = unit(0.25, "cm"))) +
-    geom_circle(aes(x0 = 0, y0 = 0, r = 1), inherit.aes = F, color = color_circle) +
-    geom_label(aes(vjust = ifelse(pca$c1[, axis2] < 0, "top", "bottom"))) +
-    coord_fixed() + labs(x = NULL, y = NULL, title = "corcircle", subtitle = title_axis) +
-    theme_gray()
+  corcircle = list()
+  axis = list()
+  color_axis = vector()
+
+  with(pca, {
+    corcircle <<- ggplot(data = NULL, aes(x = c1[, axis1], y = c1[, axis2], label = rownames(c1))) +
+      geom_vline(xintercept = 0, color = color_circle) + geom_hline(yintercept = 0, color = color_circle) +
+      geom_segment(aes(xend = 0, yend = 0), arrow = arrow(ends = "first", length = unit(0.25, "cm"))) +
+      geom_circle(aes(x0 = 0, y0 = 0, r = 1), inherit.aes = F, color = color_circle) +
+      geom_label(aes(vjust = ifelse(c1[, axis2] < 0, "top", "bottom"))) +
+      coord_fixed() + labs(x = NULL, y = NULL, title = "corcircle", subtitle = title_axis) +
+      theme_gray()
 
 
-  color_axis <- sphere(pca$l1, radius)
-  axis <- qplot(
-    x = pca$l1[, axis1], y = pca$l1[, axis2],
-    color = as.character(color_axis),
-    shape = as.character(color_axis)
-  ) +
-    scale_color_manual(name = "Outliers", values = color_true_false) +
-    scale_shape_manual(name = "Outliers", values = shape_true_false) +
-    labs(x = paste("axis", axis1), y = paste("axis", axis2), title = title_axis)
-  theme_gray()
+    color_axis <<- sphere(l1, radius)
+    axis <<- qplot(
+      x = l1[, axis1], y = l1[, axis2],
+      color = as.character(color_axis),
+      shape = as.character(color_axis)
+    ) +
+      scale_color_manual(name = "Outliers", values = color_true_false) +
+      scale_shape_manual(name = "Outliers", values = shape_true_false) +
+      labs(x = paste("axis", axis1), y = paste("axis", axis2), title = title_axis) +
+      theme_gray()
+  })
 
-
-  return(list(pca = pca, corcircle = corcircle, axis = axis, result = color_axis))
+  return(list(plot = list(corcircle = corcircle, axis = axis), result = color_axis))
 }
 
 
@@ -84,13 +85,7 @@ pca_analysis <- function(data, pca = NULL, axis1 = 1, axis2 = 2, radius = 0) {
 #'
 #' @examples
 #' ""
-tsne_analysis <- function(data, tsne = NULL, scan = NULL, epsilon = 0, minpts = 0) {
-  if (is.null(tsne)) {
-    tsne <- Rtsne(data, pca = F, normalize = F, max_iter = 1000, theta = 0)
-    tsne$Y <- as.data.table(tsne$Y)
-  }
-
-  scan <- dbscan_analysis(tsne$Y, epsilon = epsilon, minpts = minpts)
+tsne_analysis <- function(tsne = NULL, scan = NULL) {
 
   plot <- ggplot(tsne$Y, aes(V1, V2)) +
     geom_point(aes(
@@ -102,7 +97,7 @@ tsne_analysis <- function(data, tsne = NULL, scan = NULL, epsilon = 0, minpts = 
     ggtitle("tSNE") + xlab("axis 1") + ylab("axis 2") +
     theme_gray()
 
-  return(list(tsne = tsne, dbscan = scan, tsne_plot = plot))
+  return(plot)
 }
 
 
@@ -181,7 +176,7 @@ abod_analysis <- function(data, abod = NULL, k = 15) {
 #' @examples
 isofor_analysis <- function(data, isofor = NULL, nTrees = 100, phi = 8) {
   if (is.null(isofor) || any(c(nTrees, phi) != c(isofor$nTrees, isofor$phi))) {
-    isofor <- iForest(data, nTrees, phi)
+    isofor <- iForest(data, nTrees, 2^phi)
     isofor <- list(isofor = predict(isofor, data), nTrees = nTrees, phi = phi)
   }
 
@@ -205,12 +200,9 @@ isofor_analysis <- function(data, isofor = NULL, nTrees = 100, phi = 8) {
 #' @importFrom ggplot2 scale_fill_manual element_blank element_text
 #' @importFrom ggforce geom_circle
 #'
-#' @examples
-som_analysis <- function(data, som = NULL) {
-  if (is.null(som)) {
-    som <- somgrid(xdim = 10, ydim = 10, topo = "hexagonal", neighbourhood.fct = "gaussian")
-    som <- som(data, grid = som, rlen = 200)
-  }
+som_analysis <- function(data) {
+  som <- somgrid(xdim = 10, ydim = 10, topo = "hexagonal", neighbourhood.fct = "gaussian")
+  som <- som(data, grid = som, rlen = 200)
 
   # take the som and return the mean of the distance between each neurone
   neigh.dist <- function(som) {
@@ -236,6 +228,11 @@ som_analysis <- function(data, som = NULL) {
 
   pred <- predict(som)
 
+  # data som is the data table where
+  # rn : the label of the neuron
+  # x and y : the coordinate of the neurons
+  # N : the number of genes inside the neurons
+  # dist : the mean distance between each neighboor neurons
   data_som <- as.data.table(expand.grid(x = seq(som$grid$xdim), y = seq(som$grid$ydim)), keep.rownames = T)
   data_som[as.data.table(table(pred$unit.classif), keep.rownames = T), on = c("rn" = "V1"), N := i.N]
   data_som[, dist := neigh.dist(som)]

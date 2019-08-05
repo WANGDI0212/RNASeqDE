@@ -44,6 +44,7 @@ write_parameter_file <- function(param, name_file) {
 #' @export
 #'
 #' @importFrom ggplot2 ggsave is.ggplot
+#' @importFrom purrr pwalk
 #'
 plot_list_save <- function(plot_list, path) {
   if (is.null(plot_list)) {
@@ -52,11 +53,11 @@ plot_list_save <- function(plot_list, path) {
   if (missing(path)) path <- tempdir()
 
   dir.create(path, showWarnings = F, recursive = T)
-  for (i in seq_along(plot_list)) {
-    if (is.ggplot(plot_list[[i]])) {
-      ggsave(paste0(names(plot_list)[i], ".png"), plot_list[[i]], path = path)
-    }
-  }
+
+  plot_list <- Filter(is.ggplot, plot_list)
+  names_plot <- paste0(names(plot_list), ".svg")
+  pwalk(list(filename = names_plot, plot = plot_list), ggsave, path = path)
+
   invisible()
 }
 
@@ -78,15 +79,12 @@ pca_save <- function(pca = NULL, radius = 0, path) {
   }
   dir.create(path, showWarnings = F, recursive = T)
 
-  combi <- combn(1:pca$nf, 2)
-  sapply(1:ncol(combi), function(x) {
-    title_partial <- paste(combi[1, x], combi[2, x], sep = "_")
-    tmp <- pca_analysis(pca$tab, pca, combi[1, x], combi[2, x], radius)
-    ggsave(paste0("pca_corcircle_axis_", title_partial, ".png"), tmp$corcircle, path = path)
-    ggsave(paste0("pca_axis_", title_partial, ".png"), tmp$axis, path = path)
-
-    invisible()
+  as.data.frame(t(combn(1:pca$nf, 2))) %>% pwalk(~ {
+    title_partial <- paste(.x, .y, sep = "_")
+    tmp <- pca_analysis(pca, .x, .y, radius)
+    ggsave(paste0("pca_corcircle_axis_", title_partial, ".svg"), tmp$plot$corcircle, path = path)
+    ggsave(paste0("pca_axis_", title_partial, ".svg"), tmp$plot$axis, path = path)
   })
 
-  return(pca_analysis(pca$tab, pca, radius = radius)$result)
+  return(NULL)
 }
