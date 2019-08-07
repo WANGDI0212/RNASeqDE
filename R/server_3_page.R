@@ -68,14 +68,16 @@ tSNE_box_server <- function(input, output, session, data, update) {
   # if there the pca change or the input sphere radius (if it not NA)
   observeEvent({
     ana$tsne
-    if (!is.na(input$"dbscan-epsillon")) {
-      input$"dbscan-epsillon"
-      input$"dbscan-minPts"
-    }
+    input$"dbscan-epsillon"
+    input$"dbscan-minPts"
+    input$"dbscan-k"
+    input$"dbscan-mean"
   }, {
-    if (!is.null(ana$tsne)) {
+    if (!is.null(ana$tsne) && !is.na(input$"dbscan-epsillon") && input$"dbscan-epsillon" > 0) {
       ana$dbscan <- dbscan(data(), eps = input$"dbscan-epsillon", minPts = input$"dbscan-minPts")
       output$"dbscan-result" <- renderText(print_dbscan(ana$dbscan))
+      ana$plot_dbscan_tsne <- kNNdistplot(data(), k = input$"dbscan-k", eps = input$"dbscan-epsillon", meanDist = input$"dbscan-mean")
+      output$"dbscan-plot" <- renderPlot(ana$plot_dbscan_tsne)
     }
   })
 
@@ -102,21 +104,28 @@ tSNE_box_server <- function(input, output, session, data, update) {
   return(ana)
 }
 
-#' @importFrom purrr map_lgl compact
-update_change_value = function(x, y){
 
-  if (is.null(x) || is.null(y))
+
+#' update_change_value
+#'
+#' To update the value if that change, return true if one value change.
+#'
+#' @importFrom purrr map_lgl compact
+update_change_value <- function(x, y) {
+  if (is.null(x) || is.null(y)) {
     return(T)
+  }
 
   # identify and nullify the NULL elements
-  y = y[ x %>% map_lgl(~ !is.null(.)) ]
-  x = x[ y %>% map_lgl(~ !is.null(.)) ]
+  y <- y[ x %>% map_lgl(~ !is.null(.)) ]
+  x <- x[ y %>% map_lgl(~ !is.null(.)) ]
 
-  x = compact(x)
-  y = compact(y)
+  x <- compact(x)
+  y <- compact(y)
 
-  if (length(x) == 0)
+  if (length(x) == 0) {
     return(T)
+  }
 
   return(any(x != y))
 }
@@ -127,9 +136,16 @@ DBSCAN_box_server <- function(input, output, session, data, update) {
   ana <- reactiveValues()
 
   observe({
-    if (update() || update_change_value(c(ana$dbscan$eps, ana$dbscan$minPts), c(input$epsillon, input$minPts))) {
+    if (update() || update_change_value(
+      c(ana$dbscan$eps, ana$dbscan$minPts, ana$dbscan$k, ana$dbscan$mean),
+      c(input$epsillon, input$minPts, input$k, input$mean)
+    )) {
       ana$dbscan <- dbscan(data(), input$epsillon, input$minPts)
+      ana$dbscan$k <- input$k
+      ana$dbscan$meanDist <- input$mean
       output$result <- renderText(print_dbscan(ana$dbscan))
+      ana$plot <- kNNdistplot(data(), k = input$k, eps = input$epsillon, meanDist = input$mean)
+      output$plot <- renderPlot(ana$plot)
     }
   })
 
@@ -147,7 +163,7 @@ ABOD_box_server <- function(input, output, session, data, update) {
   }, {
     if (update() || update_change_value(ana$knn, input$knn)) {
       capture.output(ana$abod <- suppressWarnings(abod(data(), method = "knn", k = input$knn)))
-      ana$knn = input$knn
+      ana$knn <- input$knn
     }
   }, ignoreInit = T)
 
@@ -177,8 +193,8 @@ ISOFOR_box_server <- function(input, output, session, data, update) {
     if (update() || update_change_value(c(ana$trees_number, ana$tree_depth), c(input$trees_number, input$tree_depth))) {
       isofor <- iForest(data(), as.integer(input$trees_number), 2^as.integer(input$tree_depth))
       ana$isofor <- predict(isofor, data())
-      ana$trees_number = input$trees_number
-      ana$tree_depth = input$tree_depth
+      ana$trees_number <- input$trees_number
+      ana$tree_depth <- input$tree_depth
     }
   }, ignoreInit = T)
 

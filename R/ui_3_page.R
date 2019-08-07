@@ -20,6 +20,9 @@ box_dbscan_ui <- function(id) {
   tagList(
     column(3, numericInput(ns("epsillon"), "Epsillon", 0.5, min = 0, step = 0.1)),
     column(9, sliderInput(ns("minPts"), "MinPts", min = 1, max = 20, step = 1, value = 5)),
+    column(3, materialSwitch(ns("mean"), label = "Distance mean", value = TRUE, status = "primary")),
+    column(9, sliderTextInput(ns("k"), "Choose a value for k :", choices = 1:20, selected = 4, grid = T)),
+    column(12, plotOutput(ns("plot"))),
     verbatimTextOutput(ns("result"))
   )
 }

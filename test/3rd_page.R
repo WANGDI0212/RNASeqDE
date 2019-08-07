@@ -97,7 +97,7 @@ server <- function(input, output, session) {
 
     # apperance of the download button if there is at least one selection in chkgrp tools
     # the . is the element of the vector
-    c("down_ANA", "down_ANA_bttn") %>% walk(~ if (!is.null(input$chkgrp_TOOLS)) showElement(.) else hideElement(.))
+    c("down_ANA", "down_ANA_bttn") %>% walk(~ toggleElement(., condition = !is.null(input$chkgrp_TOOLS)))
 
     # toggle the elements when actif
     # the .x represent the box variable
