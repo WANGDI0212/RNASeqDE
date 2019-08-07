@@ -31,9 +31,9 @@ pca_analysis <- function(pca, axis1 = 1, axis2 = 2, radius = 0) {
 
   color_circle <- "firebrick"
 
-  corcircle = list()
-  axis = list()
-  color_axis = vector()
+  corcircle <- list()
+  axis <- list()
+  color_axis <- vector()
 
   with(pca, {
     corcircle <<- ggplot(data = NULL, aes(x = c1[, axis1], y = c1[, axis2], label = rownames(c1))) +
@@ -86,7 +86,6 @@ pca_analysis <- function(pca, axis1 = 1, axis2 = 2, radius = 0) {
 #' @examples
 #' ""
 tsne_analysis <- function(tsne = NULL, scan = NULL) {
-
   plot <- ggplot(tsne$Y, aes(V1, V2)) +
     geom_point(aes(
       color = as.character(scan$cluster),
@@ -100,7 +99,30 @@ tsne_analysis <- function(tsne = NULL, scan = NULL) {
   return(plot)
 }
 
+#' kNNdistplot
+#'
+#' Take a object for view the distance beetween the points with various points
+#'
+#' @importFrom dbscan kNN
+#' @importFrom ggplot2 qplot geom_hline annotate
+kNNdistplot <- function(data, k = 4, eps = 0.5, meanDist = F) {
+  kNN_object <- kNN(data, k, sort = F)
 
+  dist <- if (meanDist) rowMeans(kNN_object$dist) else kNN_object$dist[, k]
+
+  return(qplot(
+    x = 1:length(dist), y = sort(dist), geom = "line",
+    xlab = "Points (sample) sorted by distance",
+    ylab = if (meanDist) paste0("Mean of ", k, "-NN distances") else paste0(k, "-NN distance"),
+    ylim = range(dist, na.rm = T)
+  ) +
+    geom_hline(yintercept = eps, linetype = "longdash") +
+    annotate("text",
+      x = 2, y = eps,
+      label = c(paste("nb values :", sum(dist < eps)), paste("nb values :", sum(dist >= eps))),
+      vjust = c(1.5, -0.5), hjust = "left", size = 7
+    ))
+}
 
 
 #' dbscan analysis
