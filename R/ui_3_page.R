@@ -59,7 +59,7 @@ box_abod_ui <- function(id) {
   ns <- NS(id)
 
   tagList(
-    sliderInput(ns("knn"), "Number of nearest neighbours", 20, min = 1, max = 40, step = 1),
+    sliderInput(ns("knn"), "Number of nearest neighbours", 20, min = 2, max = 40, step = 1),
     Anomaly_Score_Threshold_ui(ns("quantile"), value = 0.05),
     verbatimTextOutput(ns("outliers"))
   )

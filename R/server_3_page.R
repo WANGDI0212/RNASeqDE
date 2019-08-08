@@ -74,9 +74,9 @@ tSNE_box_server <- function(input, output, session, data, update) {
     input$"dbscan-mean"
   }, {
     if (!is.null(ana$tsne) && !is.na(input$"dbscan-epsillon") && input$"dbscan-epsillon" > 0) {
-      ana$dbscan <- dbscan(data(), eps = input$"dbscan-epsillon", minPts = input$"dbscan-minPts")
+      ana$dbscan <- dbscan(ana$tsne$Y, eps = input$"dbscan-epsillon", minPts = input$"dbscan-minPts")
       output$"dbscan-result" <- renderText(print_dbscan(ana$dbscan))
-      ana$plot_dbscan_tsne <- kNNdistplot(data(), k = input$"dbscan-k", eps = input$"dbscan-epsillon", meanDist = input$"dbscan-mean")
+      ana$plot_dbscan_tsne <- kNNdistplot(ana$tsne$Y, k = input$"dbscan-k", eps = input$"dbscan-epsillon", meanDist = input$"dbscan-mean")
       output$"dbscan-plot" <- renderPlot(ana$plot_dbscan_tsne)
     }
   })
@@ -127,6 +127,9 @@ update_change_value <- function(x, y) {
     return(T)
   }
 
+  if (anyNA(x) || anyNA(y))
+    return(F)
+
   return(any(x != y))
 }
 
@@ -135,7 +138,14 @@ update_change_value <- function(x, y) {
 DBSCAN_box_server <- function(input, output, session, data, update) {
   ana <- reactiveValues()
 
-  observe({
+  observeEvent({
+    update()
+    data()
+    input$epsillon
+    input$minPts
+    input$k
+    input$mean
+  },{
     if (update() || update_change_value(
       c(ana$dbscan$eps, ana$dbscan$minPts, ana$dbscan$k, ana$dbscan$mean),
       c(input$epsillon, input$minPts, input$k, input$mean)
@@ -147,7 +157,7 @@ DBSCAN_box_server <- function(input, output, session, data, update) {
       ana$plot <- kNNdistplot(data(), k = input$k, eps = input$epsillon, meanDist = input$mean)
       output$plot <- renderPlot(ana$plot)
     }
-  })
+  }, ignoreInit = T)
 
   return(ana)
 }
@@ -243,7 +253,7 @@ SOM_box_server <- function(input, output, session, data, update) {
       ana$som$res <- with(ana$som, pred %in% as.numeric(data[dist > quantile(dist, input$"quantile-quantile"), rn]))
       output$outliers <- renderText(outliers_number(sum(ana$som$res)))
     }
-  }, ignoreInit = T, ignoreNULL = T)
+  }, ignoreInit = T)
 
   return(ana)
 }
