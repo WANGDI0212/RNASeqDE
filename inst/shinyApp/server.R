@@ -125,21 +125,23 @@ function(input, output, session) {
       # save the other plot
       plot_list_save(list_plot, path)
 
-      # save all the plot for each comparison
-      sapply(split(data_comp(), by = "comp_name"), function(subdata) {
-        title <- subdata[, unique(comp_name)]
+      if (!is.na(input$"comparison-pvalue")) {
+        # save all the plot for each comparison
+        sapply(split(data_comp(), by = "comp_name"), function(subdata) {
+          title <- subdata[, unique(comp_name)]
 
-        is_inferior <- subdata[, as.character(pval_adj < input$"comparison-pvalue")]
+          is_inferior <- subdata[, as.character(pval_adj < input$"comparison-pvalue")]
 
-        name_legend <- paste("adj PValue <=", input$"comparison-pvalue")
-        gg_begin <- ggplot(subdata, aes(col = is_inferior, shape = is_inferior)) +
-          labs(shape = name_legend, colour = name_legend, title = title) +
-          scale_color_manual(values = color_true_false) +
-          scale_shape_manual(values = shape_true_false) + theme_gray()
+          name_legend <- paste("adj PValue <=", input$"comparison-pvalue")
+          gg_begin <- ggplot(subdata, aes(col = is_inferior, shape = is_inferior)) +
+            labs(shape = name_legend, colour = name_legend, title = title) +
+            scale_color_manual(values = color_true_false) +
+            scale_shape_manual(values = shape_true_false) + theme_gray()
 
-        ggsave(paste0(title, "_Smear.svg"), gg_begin + geom_point(aes(x = AveLogCPM, y = logFC)) + geom_smooth(aes(x = AveLogCPM, y = logFC)), path = path)
-        ggsave(paste0(title, "_volcano.svg"), gg_begin + geom_point(aes(x = logFC, y = -log10(pval_adj))) + ylab("-log10(adj PValue)"), path = path)
-      }, simplify = F)
+          ggsave(paste0(title, "_Smear.svg"), gg_begin + geom_point(aes(x = AveLogCPM, y = logFC)) + geom_smooth(aes(x = AveLogCPM, y = logFC)), path = path)
+          ggsave(paste0(title, "_volcano.svg"), gg_begin + geom_point(aes(x = logFC, y = -log10(pval_adj))) + ylab("-log10(adj PValue)"), path = path)
+        }, simplify = F)
+      }
 
       zip(file, path, flags = "-jr9Xm")
     }
@@ -170,7 +172,7 @@ function(input, output, session) {
 
     # apperance of the download button if there is at least one selection in chkgrp tools
     # the . is the element of the vector
-    c("down_ANA", "down_ANA_bttn") %>% walk(~ toggleElement(., condition = !is.null(input$chkgrp_TOOLS)) )
+    c("down_ANA", "down_ANA_bttn") %>% walk(~ toggleElement(., condition = !is.null(input$chkgrp_TOOLS)))
 
     # toggle the elements when actif
     # the .x represent the box variable
@@ -224,20 +226,28 @@ function(input, output, session) {
       data <- as.data.table(mat_res(), keep.rownames = T)
 
       # take the patterns to keep all values we want
-      patterns = paste0("(", input$chkgrp_TOOLS, ")", collapse = "|")
-      patterns = sub("SOM", "self_organizing_map", patterns)
-      patterns = sub("ISOFOR", "isolation_forest", patterns)
+      patterns <- paste0("(", input$chkgrp_TOOLS, ")", collapse = "|")
+      patterns <- sub("SOM", "self_organizing_map", patterns)
+      patterns <- sub("ISOFOR", "isolation_forest", patterns)
 
       # convert the input list and search for what we really want
-      inputlist = reactiveValuesToList(input)
-      inputlist = inputlist[names(inputlist) %>% keep(grepl, pattern = patterns) %>% discard(grepl, pattern = "selectized")]
-      names(inputlist) = gsub("quantile-quantile", "quantile", names(inputlist))
+      inputlist <- reactiveValuesToList(input)
+      inputlist <- inputlist[names(inputlist) %>%
+        keep(grepl, pattern = patterns) %>%
+        discard(grepl, pattern = "selectized")]
+      names(inputlist) <- gsub("quantile-quantile", "quantile", names(inputlist))
 
       # put the configuration in a file
-      name = names(inputlist) %>% strsplit("-") %>% map_chr(1) %>% unique
-      name %>% map(~ {
-        inputlist[grepl(., names(inputlist))] %>% set_names(~ strsplit(., "-") %>% map_chr(2))
-      }) %>% set_names(name) %>% write.config(file.path = file.path(path, 'parameters.txt'))
+      name <- names(inputlist) %>%
+        strsplit("-") %>%
+        map_chr(1) %>%
+        unique()
+      name %>%
+        map(~ {
+          inputlist[grepl(., names(inputlist))] %>% set_names(~ strsplit(., "-") %>% map_chr(2))
+        }) %>%
+        set_names(name) %>%
+        write.config(file.path = file.path(path, "parameters.txt"))
 
 
       # the data from the analysis
@@ -269,7 +279,9 @@ function(input, output, session) {
       fwrite(data[, .SD, .SDcols = replace(grepl("cluster$", names(data)), 1:nb_col_before, T)], file.path(path, "cluster.csv"), sep = "\t")
 
       # save all the plot
-      pca_save(list_ana$PCA$pca, input$`PCA-sphere_radius`, path)
+      if (!is.na(input$`PCA-sphere_radius`)) {
+        pca_save(list_ana$PCA$pca, input$`PCA-sphere_radius`, path)
+      }
       plot_list_save(list_ana$tSNE, path)
       plot_list_save(list_ana$SOM$som, path)
 
