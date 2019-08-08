@@ -14,6 +14,9 @@ comparison_box_server <- function(input, output, session, data, plot_list) {
     data
     input$pvalue
   }, {
+
+    feedbackDanger(session$ns("pvalue"), is.na(input$pvalue), "It return a NA value")
+
     if (!is.na(input$pvalue)) {
       # update the table with the Pvalue you want
       output$table <- renderTable({

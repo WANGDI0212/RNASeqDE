@@ -10,7 +10,7 @@ dashboardPagePlus(
   ),
   body = dashboardBody(
     # useShinyalert(),
-    # useShinyFeedback(),
+    useShinyFeedback(),
     useShinyjs(),
     tabItems(
 

@@ -27,10 +27,10 @@ PCA_box_server <- function(input, output, session, data, update) {
   # if there the pca change or the input sphere radius (if it not NA)
   observeEvent({
     ana$pca
-    if (!is.na(input$sphere_radius)) {
-      input$sphere_radius
-    }
+    input$sphere_radius
   }, {
+    feedbackDanger(session$ns("sphere_radius"), is.na(input$sphere_radius), "It return a NA value")
+
     if (!is.null(ana$pca)) {
       # draw the plot the result of the pca
       ana$res <- pca_analysis(pca = ana$pca, radius = input$sphere_radius)
@@ -73,6 +73,9 @@ tSNE_box_server <- function(input, output, session, data, update) {
     input$"dbscan-k"
     input$"dbscan-mean"
   }, {
+
+    feedbackDanger(session$ns("dbscan-epsillon"), is.na(input$"dbscan-epsillon"), "It return a NA value")
+
     if (!is.null(ana$tsne) && !is.na(input$"dbscan-epsillon") && input$"dbscan-epsillon" > 0) {
       ana$dbscan <- dbscan(ana$tsne$Y, eps = input$"dbscan-epsillon", minPts = input$"dbscan-minPts")
       output$"dbscan-result" <- renderText(print_dbscan(ana$dbscan))
@@ -146,6 +149,9 @@ DBSCAN_box_server <- function(input, output, session, data, update) {
     input$k
     input$mean
   },{
+
+    feedbackDanger(session$ns("epsillon"), is.na(input$epsillon), "It return a NA value")
+
     if (update() || update_change_value(
       c(ana$dbscan$eps, ana$dbscan$minPts, ana$dbscan$k, ana$dbscan$mean),
       c(input$epsillon, input$minPts, input$k, input$mean)
